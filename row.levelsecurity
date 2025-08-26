@@ -1,0 +1,17 @@
+-- Enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE books ENABLE ROW LEVEL SECURITY;
+ALTER TABLE borrow_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE penalties ENABLE ROW LEVEL SECURITY;
+
+-- Users can read/update their own data
+CREATE POLICY "Users can view own data" ON users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own data" ON users FOR UPDATE USING (auth.uid() = id);
+
+-- Books are readable by all authenticated users
+CREATE POLICY "Books are viewable by authenticated users" ON books FOR SELECT TO authenticated USING (true);
+
+-- Admin policies (you'll need to set is_admin = true for admin users)
+CREATE POLICY "Admins can do everything on books" ON books FOR ALL TO authenticated USING (
+  EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND is_admin = true)
+);

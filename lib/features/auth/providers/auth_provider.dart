@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
-import '../../../core/database/database.dart';
+import '../../../core/database/database_helper.dart';
 import '../../../core/models/user.dart';
 
 class AuthProvider extends ChangeNotifier {
   final supabase.SupabaseClient _supabase = supabase.Supabase.instance.client;
-  final AppDatabase _database = AppDatabase();
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
-  supabase.User? _currentUser;
+  User? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
 
-  supabase.User? get currentUser => _currentUser;
+  User? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _currentUser != null;
@@ -23,8 +23,7 @@ class AuthProvider extends ChangeNotifier {
   void _initAuth() {
     final session = _supabase.auth.currentSession;
     if (session != null) {
-      _currentUser = session.user;
-      _loadUserFromDatabase();
+      _loadUserFromDatabase(session.user);
     }
 
     _supabase.auth.onAuthStateChange.listen((data) {
@@ -32,37 +31,38 @@ class AuthProvider extends ChangeNotifier {
       final supabase.Session? session = data.session;
 
       if (event == supabase.AuthChangeEvent.signedIn && session != null) {
-        _currentUser = session.user;
-        _loadUserFromDatabase();
+        _loadUserFromDatabase(session.user);
       } else if (event == supabase.AuthChangeEvent.signedOut) {
         _currentUser = null;
+        notifyListeners();
       }
-      notifyListeners();
     });
   }
 
-  Future<void> _loadUserFromDatabase() async {
-    if (_currentUser == null) return;
-    
-    final dbUser = await _database.getUserById(_currentUser!.id);
+  Future<void> _loadUserFromDatabase(supabase.User supabaseUser) async {
+    final dbUser = await _databaseHelper.getUserById(supabaseUser.id);
     if (dbUser == null) {
-      await _createUserInDatabase();
+      await _createUserInDatabase(supabaseUser);
+    } else {
+      _currentUser = dbUser;
+      notifyListeners();
     }
   }
 
-  Future<void> _createUserInDatabase() async {
-    if (_currentUser == null) return;
-
+  Future<void> _createUserInDatabase(supabase.User supabaseUser) async {
     final user = User(
-      id: _currentUser!.id,
-      email: _currentUser!.email ?? '',
-      fullName: _currentUser!.userMetadata?['full_name'] ?? '',
-      phoneNumber: _currentUser!.phone,
+      id: supabaseUser.id,
+      email: supabaseUser.email ?? '',
+      fullName: supabaseUser.userMetadata?['full_name'] ?? '',
+      studentId: supabaseUser.userMetadata?['student_id'],
+      phoneNumber: supabaseUser.phone,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
-    await _database.insertUser(user);
+    await _databaseHelper.insertUser(user);
+    _currentUser = user;
+    notifyListeners();
   }
 
   Future<bool> signUp({
@@ -87,8 +87,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       if (response.user != null) {
-        _currentUser = response.user;
-        await _createUserInDatabase();
+        await _createUserInDatabase(response.user!);
         return true;
       }
       return false;
@@ -113,7 +112,11 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      return response.user != null;
+      if (response.user != null) {
+        await _loadUserFromDatabase(response.user!);
+        return true;
+      }
+      return false;
     } catch (e) {
       _setError(e.toString());
       return false;
@@ -148,11 +151,5 @@ class AuthProvider extends ChangeNotifier {
   void _clearError() {
     _errorMessage = null;
     notifyListeners();
-  }
-
-  @override
-  void dispose() {
-    _database.close();
-    super.dispose();
   }
 }

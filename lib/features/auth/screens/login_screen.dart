@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
+import '../../admin/screens/admin_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _showAdminAccess = false;
 
   @override
   void dispose() {
@@ -44,6 +47,162 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showAdminLoginDialog() {
+    final adminEmailController = TextEditingController();
+    final adminPasswordController = TextEditingController();
+    bool isAdminPasswordVisible = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Admin Access',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 300,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Sign in as administrator to manage the library system',
+                  style: GoogleFonts.inter(
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: adminEmailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Admin Email',
+                    prefixIcon: Icon(Icons.email),
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: adminPasswordController,
+                  obscureText: !isAdminPasswordVisible,
+                  decoration: InputDecoration(
+                    labelText: 'Admin Password',
+                    prefixIcon: const Icon(Icons.lock),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(isAdminPasswordVisible
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () {
+                        setDialogState(() {
+                          isAdminPasswordVisible = !isAdminPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Demo: admin@iborrow.com / admin123',
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            Consumer<AuthProvider>(
+              builder: (context, auth, child) {
+                return FilledButton(
+                  onPressed: auth.isLoading
+                      ? null
+                      : () async {
+                          final email = adminEmailController.text.trim();
+                          final password = adminPasswordController.text;
+
+                          if (email.isEmpty || password.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please fill in all fields'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (_validateAdminCredentials(email, password)) {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AdminDashboardScreen(),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Invalid admin credentials'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  child: auth.isLoading
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Sign In as Admin'),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _validateAdminCredentials(String email, String password) {
+    const adminCredentials = {
+      'admin@iborrow.com': 'admin123',
+      'librarian@iborrow.com': 'library123',
+      'super@iborrow.com': 'super123',
+    };
+
+    return adminCredentials[email.toLowerCase()] == password;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,15 +213,31 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Logo and Title
-              Icon(
-                Icons.book,
-                size: 80,
-                color: Theme.of(context).colorScheme.primary,
+              GestureDetector(
+                onLongPress: () {
+                  setState(() {
+                    _showAdminAccess = !_showAdminAccess;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_showAdminAccess 
+                          ? 'Admin access enabled' 
+                          : 'Admin access disabled'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: Icon(
+                  Icons.book,
+                  size: 80,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
               const SizedBox(height: 16),
               Text(
                 'iBorrow',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                style: GoogleFonts.poppins(
+                  fontSize: 36,
                   fontWeight: FontWeight.bold,
                   color: Theme.of(context).colorScheme.primary,
                 ),
@@ -70,7 +245,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 8),
               Text(
                 'Library Management System',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                style: GoogleFonts.inter(
+                  fontSize: 16,
                   color: Colors.grey[600],
                 ),
               ),
@@ -141,6 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
+                                          color: Colors.white,
                                         ),
                                       )
                                     : const Text('Sign In'),
@@ -153,6 +330,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              
+              // Admin Access Button (when enabled)
+              if (_showAdminAccess) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _showAdminLoginDialog,
+                    icon: const Icon(Icons.admin_panel_settings),
+                    label: const Text('Admin Access'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      side: const BorderSide(color: Colors.orange),
+                    ),
+                  ),
+                ),
+              ],
+              
               const SizedBox(height: 24),
 
               // Sign Up Link
@@ -161,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 children: [
                   Text(
                     "Don't have an account? ",
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: GoogleFonts.inter(),
                   ),
                   TextButton(
                     onPressed: () => context.go('/signup'),
@@ -169,6 +364,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
+              
+              // Admin Access Hint
+              if (!_showAdminAccess)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    'Long press the logo for admin access',
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

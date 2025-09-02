@@ -163,7 +163,9 @@ class _BookListScreenState extends State<BookListScreen> {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => context.go('/book/${book.id}'),
+        onTap: () {
+          context.push('/books/detail/${book.id}', extra: book);
+        },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),

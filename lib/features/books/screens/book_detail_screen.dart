@@ -8,11 +8,13 @@ import '../../borrowing/providers/borrowing_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 
 class BookDetailScreen extends StatefulWidget {
-  final String bookId;
+  final String? bookId;
+  final Book? book;
 
   const BookDetailScreen({
     super.key,
-    required this.bookId,
+    this.bookId,
+    this.book,
   });
 
   @override
@@ -20,78 +22,130 @@ class BookDetailScreen extends StatefulWidget {
 }
 
 class _BookDetailScreenState extends State<BookDetailScreen> {
-  Book? book;
-  bool isLoading = true;
+  Book? _book;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadBook();
+    if (widget.book != null) {
+      _book = widget.book;
+      _isLoading = false;
+    } else if (widget.bookId != null) {
+      _loadBook();
+    }
   }
 
   Future<void> _loadBook() async {
-    final booksProvider = Provider.of<BooksProvider>(context, listen: false);
-    final loadedBook = await booksProvider.getBookById(widget.bookId);
-    
-    if (mounted) {
+    try {
+      final booksProvider = Provider.of<BooksProvider>(context, listen: false);
+      await booksProvider.loadBooks();
+      
+      final book = booksProvider.books.firstWhere(
+        (b) => b.id == widget.bookId,
+        orElse: () => throw Exception('Book not found'),
+      );
+      
       setState(() {
-        book = loadedBook;
-        isLoading = false;
+        _book = book;
+        _isLoading = false;
       });
-    }
-  }
-
-  Future<void> _requestBook() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
-    
-    if (authProvider.currentUser == null || book == null) return;
-
-    // Check if user can borrow books
-    if (!borrowingProvider.canBorrowBooks) {
+    } catch (e) {
+      setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You have pending penalties. Please pay them before borrowing books.'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Error loading book: $e')),
         );
-      }
-      return;
-    }
-
-    final success = await borrowingProvider.requestBook(
-      authProvider.currentUser!.id,
-      book!.id,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success 
-                ? 'Book request submitted successfully!' 
-                : 'Failed to submit book request. Please try again.',
-          ),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
-
-      if (success) {
         context.pop();
       }
     }
   }
 
+  Future<void> _borrowBook() async {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final borrowing = Provider.of<BorrowingProvider>(context, listen: false);
+    
+    if (auth.currentUser == null) {
+      _showMessage('Please log in to borrow books', Colors.red);
+      return;
+    }
+
+    if (!borrowing.canBorrowBooks) {
+      _showMessage('You have pending penalties. Please pay them first.', Colors.red);
+      return;
+    }
+
+    // Show loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      final success = await borrowing.requestBook(
+        auth.currentUser!.id,
+        _book!.id,
+        notes: 'Book request from mobile app',
+      );
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        
+        _showMessage(
+          success 
+            ? 'Book request submitted successfully!' 
+            : 'Failed to request book. Please try again.',
+          success ? Colors.green : Colors.red,
+        );
+
+        if (success) {
+          // Wait for message to show
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          if (mounted) {
+            // Use proper navigation that maintains the bottom nav
+            if (GoRouter.of(context).canPop()) {
+              context.pop(); // This goes back to the books list with bottom nav
+            } else {
+              // Fallback - navigate to home with bottom nav
+              context.go('/home');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        _showMessage('Error: ${e.toString()}', Colors.red);
+      }
+    }
+  }
+
+  void _showMessage(String message, Color color) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: color,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
+    if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (book == null) {
+    if (_book == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Book Not Found')),
         body: const Center(
@@ -102,7 +156,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(book!.title),
+        title: Text(_book!.title),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -114,9 +168,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               height: 300,
               width: double.infinity,
               color: Colors.grey[200],
-              child: book!.imageUrl != null
+              child: _book!.imageUrl != null
                   ? CachedNetworkImage(
-                      imageUrl: book!.imageUrl!,
+                      imageUrl: _book!.imageUrl!,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => const Center(
                         child: CircularProgressIndicator(),
@@ -141,7 +195,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 children: [
                   // Title
                   Text(
-                    book!.title,
+                    _book!.title,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -151,7 +205,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   
                   // Author
                   Text(
-                    'by ${book!.author}',
+                    'by ${_book!.author}',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -167,7 +221,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      book!.genre,
+                      _book!.genre,
                       style: TextStyle(
                         color: Theme.of(context).primaryColor,
                         fontWeight: FontWeight.w500,
@@ -182,30 +236,30 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     children: [
                       Icon(
                         Icons.library_books,
-                        color: book!.availableCopies > 0 ? Colors.green : Colors.red,
+                        color: _book!.availableCopies > 0 ? Colors.green : Colors.red,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${book!.availableCopies} of ${book!.totalCopies} available',
+                        '${_book!.availableCopies} of ${_book!.totalCopies} available',
                         style: TextStyle(
-                          color: book!.availableCopies > 0 ? Colors.green : Colors.red,
+                          color: _book!.availableCopies > 0 ? Colors.green : Colors.red,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                   
-                  if (book!.isbn != null) ...[
+                  if (_book!.isbn != null) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'ISBN: ${book!.isbn}',
+                      'ISBN: ${_book!.isbn}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: Colors.grey[600],
                       ),
                     ),
                   ],
                   
-                  if (book!.description != null) ...[
+                  if (_book!.description != null) ...[
                     const SizedBox(height: 24),
                     Text(
                       'Description',
@@ -215,7 +269,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      book!.description!,
+                      _book!.description!,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
@@ -229,7 +283,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         builder: (context, authProvider, borrowingProvider, child) {
           final isAuthenticated = authProvider.isAuthenticated;
           final canBorrow = isAuthenticated && 
-                          book!.availableCopies > 0 && 
+                          _book!.availableCopies > 0 && 
                           borrowingProvider.canBorrowBooks;
           
           if (!isAuthenticated) {
@@ -245,12 +299,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           return Container(
             padding: const EdgeInsets.all(16),
             child: ElevatedButton(
-              onPressed: canBorrow ? _requestBook : null,
+              onPressed: canBorrow ? _borrowBook : null,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text(
-                book!.availableCopies > 0 
+                _book!.availableCopies > 0 
                     ? (borrowingProvider.canBorrowBooks 
                         ? 'Request Book' 
                         : 'Pay Penalties to Borrow')

@@ -44,4 +44,29 @@ class User {
       'updated_at': updatedAt.toIso8601String(),
     };
   }
+
+  Map<String, dynamic> toSupabaseMap() {
+    return {
+      'id': id,
+      'email': email,
+      'full_name': fullName,
+      'student_id': studentId,
+      'phone_number': phoneNumber,
+      'is_admin': false,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory User.fromSupabaseMap(Map<String, dynamic> map) {
+    return User(
+      id: map['id'],
+      email: map['email'],
+      fullName: map['full_name'],
+      studentId: map['student_id'],
+      phoneNumber: map['phone_number'],
+      createdAt: DateTime.parse(map['created_at']),
+      updatedAt: DateTime.parse(map['updated_at']),
+    );
+  }
 }

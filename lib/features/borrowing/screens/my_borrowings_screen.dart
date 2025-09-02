@@ -128,6 +128,14 @@ class _CurrentBorrowingsTab extends StatelessWidget {
         statusColor = isOverdue ? Colors.red : Colors.green;
         statusText = isOverdue ? 'Overdue' : 'Borrowed';
         break;
+      case 'return_requested':
+        statusColor = Colors.blue;
+        statusText = 'Return Requested';
+        break;
+      case 'returned':
+        statusColor = Colors.grey;
+        statusText = 'Returned';
+        break;
       default:
         statusColor = Colors.grey;
         statusText = record.status;
@@ -147,25 +155,33 @@ class _CurrentBorrowingsTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Book ID: ${record.bookId}', // In real app, fetch book title
+                        'Book ID: ${record.bookId}',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Requested: ${DateFormat('MMM dd, yyyy').format(record.requestDate)}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                        'Request Date: ${DateFormat('MMM dd, yyyy').format(record.requestDate)}',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       if (record.dueDate != null) ...[
                         const SizedBox(height: 4),
                         Text(
-                          'Due: ${DateFormat('MMM dd, yyyy').format(record.dueDate!)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: isOverdue ? Colors.red : Colors.grey[600],
-                            fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
+                          'Due Date: ${DateFormat('MMM dd, yyyy').format(record.dueDate!)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isOverdue ? Colors.red : null,
+                            fontWeight: isOverdue ? FontWeight.bold : null,
+                          ),
+                        ),
+                      ],
+                      if (record.returnRequestDate != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Return Requested: ${DateFormat('MMM dd, yyyy').format(record.returnRequestDate!)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -175,7 +191,7 @@ class _CurrentBorrowingsTab extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
+                    color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: statusColor),
                   ),
@@ -191,28 +207,6 @@ class _CurrentBorrowingsTab extends StatelessWidget {
               ],
             ),
             
-            if (record.status == 'borrowed') ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final success = await borrowing.returnBook(record.id);
-                    if (success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Book returned successfully'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.assignment_return),
-                  label: const Text('Return Book'),
-                ),
-              ),
-            ],
-            
             if (record.notes != null) ...[
               const SizedBox(height: 8),
               Text(
@@ -222,10 +216,78 @@ class _CurrentBorrowingsTab extends StatelessWidget {
                 ),
               ),
             ],
+            
+            // Add Return Request Button
+            if (record.status == 'borrowed') ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _requestReturn(context, record.id, borrowing),
+                  icon: const Icon(Icons.assignment_return),
+                  label: const Text('Request Return'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  // Add this method to handle return requests:
+  Future<void> _requestReturn(BuildContext context, String recordId, BorrowingProvider borrowing) async {
+    final notes = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Request Book Return'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Please provide any notes about the book condition:'),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                decoration: const InputDecoration(
+                  labelText: 'Return notes (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: const Text('Submit Request'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (notes != null && context.mounted) {
+      final success = await borrowing.requestBookReturn(recordId, returnNotes: notes.isNotEmpty ? notes : null);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success ? 'Return request submitted successfully!' : 'Failed to submit return request'),
+            backgroundColor: success ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    }
   }
 }
 

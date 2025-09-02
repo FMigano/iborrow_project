@@ -44,4 +44,30 @@ class Penalty {
       'created_at': createdAt.toIso8601String(),
     };
   }
+
+  Map<String, dynamic> toSupabaseMap() {
+    return {
+      'id': id,
+      'user_id': userId,
+      'borrow_record_id': borrowRecordId,
+      'amount': amount,
+      'reason': reason,
+      'status': status,
+      'paid_at': paidAt?.toIso8601String(),
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
+
+  factory Penalty.fromSupabaseMap(Map<String, dynamic> map) {
+    return Penalty(
+      id: map['id'],
+      userId: map['user_id'],
+      borrowRecordId: map['borrow_record_id'],
+      amount: map['amount'].toDouble(),
+      reason: map['reason'],
+      status: map['status'],
+      paidAt: map['paid_at'] != null ? DateTime.parse(map['paid_at']) : null,
+      createdAt: DateTime.parse(map['created_at']),
+    );
+  }
 }

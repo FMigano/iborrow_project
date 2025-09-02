@@ -10,12 +10,14 @@ class BorrowingProvider extends ChangeNotifier {
 
   List<BorrowRecord> _userBorrowings = [];
   List<BorrowRecord> _pendingRequests = [];
+  List<BorrowRecord> _allActiveBorrowings = []; // Add this
   List<Penalty> _userPenalties = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   List<BorrowRecord> get userBorrowings => _userBorrowings;
   List<BorrowRecord> get pendingRequests => _pendingRequests;
+  List<BorrowRecord> get allActiveBorrowings => _allActiveBorrowings; // Add this
   List<Penalty> get userPenalties => _userPenalties;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -26,6 +28,33 @@ class BorrowingProvider extends ChangeNotifier {
     return _userPenalties
         .where((p) => p.status == 'pending')
         .fold(0.0, (sum, penalty) => sum + penalty.amount);
+  }
+
+  // Add this method to load all active borrowings for admin
+  Future<void> loadAllActiveBorrowings() async {
+    try {
+      _setLoading(true);
+      _allActiveBorrowings = await _databaseHelper.getAllActiveBorrowings();
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Update loadPendingRequests to also load active borrowings
+  Future<void> loadPendingRequests() async {
+    try {
+      _setLoading(true);
+      _pendingRequests = await _databaseHelper.getPendingRequests();
+      await loadAllActiveBorrowings(); // Load active borrowings too
+      notifyListeners();
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
   }
 
   Future<void> loadUserData(String userId) async {
@@ -54,18 +83,6 @@ class BorrowingProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadPendingRequests() async {
-    try {
-      _setLoading(true);
-      _pendingRequests = await _databaseHelper.getPendingRequests();
-      notifyListeners();
-    } catch (e) {
-      _setError(e.toString());
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   Future<bool> requestBook(String userId, String bookId, {String? notes}) async {
     try {
       final borrowRecord = BorrowRecord(
@@ -81,6 +98,7 @@ class BorrowingProvider extends ChangeNotifier {
 
       await _databaseHelper.insertBorrowRecord(borrowRecord);
       await loadUserBorrowings(userId);
+      await loadPendingRequests(); // This will also refresh admin data
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -91,15 +109,14 @@ class BorrowingProvider extends ChangeNotifier {
   Future<bool> approveBorrowRequest(String recordId, String adminId) async {
     try {
       // Get the borrow record
-      final records = await _databaseHelper.getPendingRequests();
-      final record = records.firstWhere((r) => r.id == recordId);
+      final record = _pendingRequests.firstWhere((r) => r.id == recordId);
       
       // Create approved record
       final approvedRecord = BorrowRecord(
         id: record.id,
         userId: record.userId,
         bookId: record.bookId,
-        status: 'approved',
+        status: 'borrowed', // Change to 'borrowed' instead of 'approved'
         requestDate: record.requestDate,
         approvedDate: DateTime.now(),
         borrowDate: DateTime.now(),
@@ -122,6 +139,32 @@ class BorrowingProvider extends ChangeNotifier {
         await _databaseHelper.updateBook(updatedBook);
       }
 
+      await loadPendingRequests(); // This will refresh both pending and active
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> rejectBorrowRequest(String recordId, String adminId, {String? reason}) async {
+    try {
+      final record = _pendingRequests.firstWhere((r) => r.id == recordId);
+      
+      final rejectedRecord = BorrowRecord(
+        id: record.id,
+        userId: record.userId,
+        bookId: record.bookId,
+        status: 'rejected',
+        requestDate: record.requestDate,
+        approvedDate: DateTime.now(),
+        approvedBy: adminId,
+        notes: reason ?? 'Request rejected',
+        createdAt: record.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      await _databaseHelper.updateBorrowRecord(rejectedRecord);
       await loadPendingRequests();
       return true;
     } catch (e) {
@@ -165,6 +208,7 @@ class BorrowingProvider extends ChangeNotifier {
       }
 
       await loadUserBorrowings(record.userId);
+      await loadAllActiveBorrowings(); // Refresh admin data
       return true;
     } catch (e) {
       _setError(e.toString());
@@ -198,6 +242,125 @@ class BorrowingProvider extends ChangeNotifier {
     }
   }
 
+  List<BorrowRecord> _returnRequests = []; // ADD THIS LINE
+  List<BorrowRecord> get returnRequests => _returnRequests; // ADD THIS LINE
+
+  // Load pending return requests (admin)
+  Future<void> loadReturnRequests() async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      final records = await _databaseHelper.getBorrowRecordsByStatus('return_requested');
+      _returnRequests = records;
+      
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      print('Error loading return requests: $e');
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Request book return (user action)
+  Future<bool> requestBookReturn(String borrowRecordId, {String? returnNotes}) async {
+    try {
+      final record = _userBorrowings.firstWhere((b) => b.id == borrowRecordId);
+      
+      final updatedRecord = record.copyWith(
+        status: 'return_requested',
+        returnRequestDate: DateTime.now(),
+        returnNotes: returnNotes,
+        updatedAt: DateTime.now(),
+      );
+
+      await _databaseHelper.updateBorrowRecord(updatedRecord);
+      
+      // Update local lists
+      final index = _userBorrowings.indexWhere((b) => b.id == borrowRecordId);
+      if (index != -1) {
+        _userBorrowings[index] = updatedRecord;
+      }
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error requesting book return: $e');
+      return false;
+    }
+  }
+
+  // Approve book return (admin action)
+  Future<bool> approveBookReturn(String borrowRecordId, String adminId, {String? adminNotes}) async {
+    try {
+      final record = _returnRequests.firstWhere((b) => b.id == borrowRecordId);
+      
+      final updatedRecord = record.copyWith(
+        status: 'returned',
+        returnDate: DateTime.now(),
+        returnApprovedBy: adminId,
+        returnNotes: adminNotes ?? record.returnNotes,
+        updatedAt: DateTime.now(),
+      );
+
+      await _databaseHelper.updateBorrowRecord(updatedRecord);
+      
+      // Remove from return requests and refresh data
+      _returnRequests.removeWhere((b) => b.id == borrowRecordId);
+      await loadAllActiveBorrowings(); // Refresh all data
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error approving book return: $e');
+      return false;
+    }
+  }
+
+  // Reject book return (admin action)
+  Future<bool> rejectBookReturn(String borrowRecordId, String adminId, {String? reason}) async {
+    try {
+      final record = _returnRequests.firstWhere((b) => b.id == borrowRecordId);
+      
+      final updatedRecord = record.copyWith(
+        status: 'borrowed', // Back to borrowed status
+        returnNotes: reason,
+        returnRequestDate: null, // Clear the return request date
+        updatedAt: DateTime.now(),
+      );
+
+      await _databaseHelper.updateBorrowRecord(updatedRecord);
+      
+      // Remove from return requests and refresh data
+      _returnRequests.removeWhere((b) => b.id == borrowRecordId);
+      await loadAllActiveBorrowings(); // Refresh all data
+      
+      notifyListeners();
+      return true;
+    } catch (e) {
+      print('Error rejecting book return: $e');
+      return false;
+    }
+  }
+
+  // Get statistics for returned books
+  List<BorrowRecord> get returnedBooks {
+    return _allActiveBorrowings.where((b) => b.status == 'returned').toList();
+  }
+
+  int get totalBorrowedCount {
+    return _allActiveBorrowings.where((b) => b.status == 'borrowed' || b.status == 'returned').length;
+  }
+
+  int get returnedCount {
+    return returnedBooks.length;
+  }
+
+  int get currentlyBorrowedCount {
+    return _allActiveBorrowings.where((b) => b.status == 'borrowed' || b.status == 'return_requested').length;
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -205,6 +368,11 @@ class BorrowingProvider extends ChangeNotifier {
 
   void _setError(String error) {
     _errorMessage = error;
+    notifyListeners();
+  }
+
+  void clearError() {
+    _errorMessage = null;
     notifyListeners();
   }
 }

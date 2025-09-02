@@ -7,7 +7,7 @@ import 'core/config/app_config.dart';
 import 'core/services/sync_manager.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/sample_data_service.dart';
-import 'core/router/app_router.dart';
+import 'core/router/app_router.dart'; // Import your router
 import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/books/providers/books_provider.dart';
@@ -75,17 +75,13 @@ class IBorrowApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BooksProvider()),
         ChangeNotifierProvider(create: (_) => BorrowingProvider()),
       ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          return MaterialApp.router(
-            title: 'iBorrow',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.system,
-            routerConfig: AppRouter.router,
-            debugShowCheckedModeBanner: false,
-          );
-        },
+      child: MaterialApp.router(
+        title: 'iBorrow',
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.system,
+        routerConfig: AppRouter.router, // USE YOUR ACTUAL ROUTER HERE!
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

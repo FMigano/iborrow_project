@@ -41,7 +41,7 @@ dependencies:
   shared_preferences: ^2.2.2  # Add this for web storage
   
   # Authentication & Network
-  supabase_flutter: ^2.3.4
+  supabase_flutter: ^2.5.6
   
   # Notifications
   flutter_local_notifications: ^17.0.0
@@ -49,7 +49,7 @@ dependencies:
   workmanager: ^0.5.2
   
   # Utilities
-  uuid: ^4.3.3
+  uuid: ^4.4.0  # Add this line
   connectivity_plus: ^5.0.2
   intl: ^0.19.0
   cached_network_image: ^3.3.1

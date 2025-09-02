@@ -101,6 +101,19 @@ class WebStorageHelper {
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
   }
 
+  Future<List<BorrowRecord>> getAllBorrowRecords() async {
+    final records = await _getBorrowRecords();
+    return records.values
+        .map((data) => BorrowRecord.fromMap(data))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
+
+  Future<List<User>> getAllUsers() async {
+    final users = await _getUsers();
+    return users.values.map((data) => User.fromMap(data)).toList();
+  }
+
   Future<void> updatePenalty(Penalty penalty) async {
     await insertPenalty(penalty); // Same as insert for shared preferences
   }

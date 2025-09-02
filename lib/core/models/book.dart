@@ -1,9 +1,11 @@
+import 'package:uuid/uuid.dart';
+
 class Book {
   final String id;
   final String title;
   final String author;
-  final String genre;
   final String? isbn;
+  final String genre;
   final String? description;
   final String? imageUrl;
   final int totalCopies;
@@ -11,12 +13,14 @@ class Book {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  static const _uuid = Uuid();
+
   Book({
     required this.id,
     required this.title,
     required this.author,
-    required this.genre,
     this.isbn,
+    required this.genre,
     this.description,
     this.imageUrl,
     this.totalCopies = 1,
@@ -25,16 +29,43 @@ class Book {
     required this.updatedAt,
   });
 
-  // Add this getter
   bool get isAvailable => availableCopies > 0;
+
+  Book copyWith({
+    String? id,
+    String? title,
+    String? author,
+    String? isbn,
+    String? genre,
+    String? description,
+    String? imageUrl,
+    int? totalCopies,
+    int? availableCopies,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Book(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      author: author ?? this.author,
+      isbn: isbn ?? this.isbn,
+      genre: genre ?? this.genre,
+      description: description ?? this.description,
+      imageUrl: imageUrl ?? this.imageUrl,
+      totalCopies: totalCopies ?? this.totalCopies,
+      availableCopies: availableCopies ?? this.availableCopies,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 
   factory Book.fromMap(Map<String, dynamic> map) {
     return Book(
       id: map['id'],
       title: map['title'],
       author: map['author'],
-      genre: map['genre'],
       isbn: map['isbn'],
+      genre: map['genre'],
       description: map['description'],
       imageUrl: map['image_url'],
       totalCopies: map['total_copies'] ?? 1,
@@ -49,8 +80,8 @@ class Book {
       'id': id,
       'title': title,
       'author': author,
-      'genre': genre,
       'isbn': isbn,
+      'genre': genre,
       'description': description,
       'image_url': imageUrl,
       'total_copies': totalCopies,
@@ -60,31 +91,35 @@ class Book {
     };
   }
 
-  Book copyWith({
-    String? id,
-    String? title,
-    String? author,
-    String? genre,
-    String? isbn,
-    String? description,
-    String? imageUrl,
-    int? totalCopies,
-    int? availableCopies,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-  }) {
+  factory Book.fromSupabaseMap(Map<String, dynamic> map) {
     return Book(
-      id: id ?? this.id,
-      title: title ?? this.title,
-      author: author ?? this.author,
-      genre: genre ?? this.genre,
-      isbn: isbn ?? this.isbn,
-      description: description ?? this.description,
-      imageUrl: imageUrl ?? this.imageUrl,
-      totalCopies: totalCopies ?? this.totalCopies,
-      availableCopies: availableCopies ?? this.availableCopies,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      id: map['id'],
+      title: map['title'],
+      author: map['author'],
+      isbn: map['isbn'],
+      genre: map['genre'],
+      description: map['description'],
+      imageUrl: map['image_url'],
+      totalCopies: map['total_copies'] ?? 1,
+      availableCopies: map['available_copies'] ?? 1,
+      createdAt: DateTime.parse(map['created_at']),
+      updatedAt: DateTime.parse(map['updated_at']),
     );
+  }
+
+  Map<String, dynamic> toSupabaseMap() {
+    return {
+      'id': id,
+      'title': title,
+      'author': author,
+      'isbn': isbn,
+      'genre': genre,
+      'description': description,
+      'image_url': imageUrl,
+      'total_copies': totalCopies,
+      'available_copies': availableCopies,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
   }
 }

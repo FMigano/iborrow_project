@@ -1,77 +1,67 @@
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/book.dart';
-import '../models/borrow_record.dart';
 import '../models/user.dart' as app_models;
+import '../models/borrow_record.dart';
 import '../models/penalty.dart';
-
-// Import for mobile (SQLite)
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-
-// Import for web (SharedPreferences)  
 import 'web_storage_helper.dart';
 
 class DatabaseHelper {
-  static DatabaseHelper? _instance;
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
+  factory DatabaseHelper() => _instance;
+  DatabaseHelper._internal();
+
   static Database? _database;
-  static WebStorageHelper? _webStorage;
-  static const String _databaseName = 'iborrow.db';
-  static const int _databaseVersion = 1;
-
-  // Supabase client
-  final SupabaseClient _supabase = Supabase.instance.client;
-
-  DatabaseHelper._();
-
-  static DatabaseHelper get instance {
-    _instance ??= DatabaseHelper._();
-    return _instance!;
-  }
-
-  factory DatabaseHelper() => instance;
+  final _supabase = Supabase.instance.client;
+  final webStorage = WebStorageHelper();
 
   Future<Database?> get database async {
-    if (kIsWeb) return null; // Web doesn't use SQLite
-    _database ??= await _initDatabase();
-    return _database!;
-  }
-
-  WebStorageHelper get webStorage {
-    if (!kIsWeb) throw Exception('WebStorage only available on web platform');
-    _webStorage ??= WebStorageHelper();
-    return _webStorage!;
+    if (kIsWeb) return null;
+    
+    if (_database != null) return _database;
+    
+    _database = await _initDatabase();
+    return _database;
   }
 
   Future<Database> _initDatabase() async {
-    if (kIsWeb) throw Exception('SQLite not available on web platform');
-    String path = join(await getDatabasesPath(), _databaseName);
+    // ✅ FIX: Use getDatabasesPath() for persistent storage
+    final databasesPath = await getDatabasesPath();
+    final path = join(databasesPath, 'iborrow.db');
+    
+    debugPrint('📁 Database path: $path');
+
     return await openDatabase(
       path,
-      version: _databaseVersion,
+      version: 1,
       onCreate: _onCreate,
+      onConfigure: (db) async {
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
-    // Create users table
+    debugPrint('🔧 Creating database tables...');
+    
+    // Create tables
     await db.execute('''
-      CREATE TABLE users (
+      CREATE TABLE users(
         id TEXT PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
+        email TEXT NOT NULL UNIQUE,
         full_name TEXT NOT NULL,
         student_id TEXT,
         phone_number TEXT,
         is_admin INTEGER DEFAULT 0,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        synced INTEGER DEFAULT 0
+        updated_at TEXT NOT NULL
       )
     ''');
 
-    // Create books table
     await db.execute('''
-      CREATE TABLE books (
+      CREATE TABLE books(
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         author TEXT NOT NULL,
@@ -79,65 +69,97 @@ class DatabaseHelper {
         genre TEXT NOT NULL,
         description TEXT,
         image_url TEXT,
-        total_copies INTEGER DEFAULT 1,
-        available_copies INTEGER DEFAULT 1,
+        total_copies INTEGER NOT NULL,
+        available_copies INTEGER NOT NULL,
         created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        synced INTEGER DEFAULT 0
+        updated_at TEXT NOT NULL
       )
     ''');
 
-    // Create borrow_records table
     await db.execute('''
-      CREATE TABLE borrow_records (
+      CREATE TABLE borrow_records(
         id TEXT PRIMARY KEY,
         user_id TEXT NOT NULL,
         book_id TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
+        status TEXT NOT NULL,
         request_date TEXT NOT NULL,
         approved_date TEXT,
         borrow_date TEXT,
         due_date TEXT,
+        return_request_date TEXT,
         return_date TEXT,
         approved_by TEXT,
+        return_approved_by TEXT,
         notes TEXT,
-        is_overdue INTEGER DEFAULT 0,
+        return_notes TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        synced INTEGER DEFAULT 0,
-        FOREIGN KEY (user_id) REFERENCES users (id),
-        FOREIGN KEY (book_id) REFERENCES books (id)
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
       )
     ''');
 
-    // Create penalties table
     await db.execute('''
-      CREATE TABLE penalties (
+      CREATE TABLE penalties(
         id TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
         borrow_record_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        book_id TEXT NOT NULL,
         amount REAL NOT NULL,
         reason TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        paid_at TEXT,
+        status TEXT NOT NULL,
         created_at TEXT NOT NULL,
-        synced INTEGER DEFAULT 0,
-        FOREIGN KEY (user_id) REFERENCES users (id),
-        FOREIGN KEY (borrow_record_id) REFERENCES borrow_records (id)
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (borrow_record_id) REFERENCES borrow_records (id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
       )
     ''');
 
-    // Create sync_log table for offline sync
     await db.execute('''
-      CREATE TABLE sync_log (
-        id TEXT PRIMARY KEY,
+      CREATE TABLE sync_log(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         table_name TEXT NOT NULL,
         record_id TEXT NOT NULL,
-        operation TEXT NOT NULL,
+        action TEXT NOT NULL,
         synced INTEGER DEFAULT 0,
         created_at TEXT NOT NULL
       )
     ''');
+
+    debugPrint('✅ Database tables created successfully');
+  }
+
+  // Add method to check if database exists and has data
+  Future<bool> databaseHasData() async {
+    if (kIsWeb) {
+      final books = await webStorage.getAllBooks();
+      return books.isNotEmpty;
+    }
+    
+    final db = await database;
+    if (db == null) return false;
+    
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM books');
+    final count = Sqflite.firstIntValue(result) ?? 0;
+    return count > 0;
+  }
+
+  // ✅ Add method to ensure database is initialized
+  Future<void> ensureInitialized() async {
+    if (kIsWeb) {
+      debugPrint('📱 Running on Web - using WebStorage');
+      return;
+    }
+    
+    final db = await database;
+    if (db != null) {
+      debugPrint('✅ Database initialized at: ${db.path}');
+      
+      // Check if we have data
+      final hasData = await databaseHasData();
+      debugPrint('📊 Database has data: $hasData');
+    }
   }
 
   // User methods
@@ -189,55 +211,70 @@ class DatabaseHelper {
 
   // Book methods
   Future<void> insertBook(Book book) async {
+    // ✅ SAVE TO SUPABASE FIRST (source of truth)
+    try {
+      await _supabase.from('books').upsert(book.toMap());
+      debugPrint('✅ Saved book to Supabase: ${book.title}');
+    } catch (e) {
+      debugPrint('❌ Failed to save book to Supabase: $e');
+      throw Exception('Failed to save book to cloud: $e');
+    }
+
+    // Then save locally for offline access
     if (kIsWeb) {
       await webStorage.insertBook(book);
-      await _syncBookToSupabase(book);
     } else {
       final db = await database;
-      await db!.insert('books', book.toMap());
-      await _logSync('books', book.id, 'insert');
-      await _syncBookToSupabase(book);
+      await db?.insert(
+        'books',
+        book.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
   }
 
   Future<List<Book>> getAllBooks() async {
-    if (kIsWeb) {
-      // Get from web storage and sync with Supabase
-      List<Book> localBooks = await webStorage.getAllBooks();
-      List<Book> supabaseBooks = await _getAllBooksFromSupabase();
-      
-      // Merge and update local storage
-      Map<String, Book> mergedBooks = {};
-      for (var book in localBooks) {
-        mergedBooks[book.id] = book;
-      }
-      for (var book in supabaseBooks) {
-        if (!mergedBooks.containsKey(book.id) || 
-            book.updatedAt.isAfter(mergedBooks[book.id]!.updatedAt)) {
-          mergedBooks[book.id] = book;
+    // ✅ LOAD FROM SUPABASE FIRST
+    try {
+      final response = await _supabase
+          .from('books')
+          .select()
+          .order('title', ascending: true);
+    
+      final books = (response as List)
+          .map((json) => Book.fromMap(json))
+          .toList();
+    
+      debugPrint('✅ Loaded ${books.length} books from Supabase');
+    
+      // Cache locally
+      if (kIsWeb) {
+        for (final book in books) {
           await webStorage.insertBook(book);
         }
-      }
-      return mergedBooks.values.toList();
-    } else {
-      final db = await database;
-      final List<Map<String, dynamic>> maps = await db!.query('books');
-      List<Book> localBooks = List.generate(maps.length, (i) => Book.fromMap(maps[i]));
-      
-      // Also get from Supabase and merge
-      List<Book> supabaseBooks = await _getAllBooksFromSupabase();
-      Map<String, Book> mergedBooks = {};
-      for (var book in localBooks) {
-        mergedBooks[book.id] = book;
-      }
-      for (var book in supabaseBooks) {
-        if (!mergedBooks.containsKey(book.id) || 
-            book.updatedAt.isAfter(mergedBooks[book.id]!.updatedAt)) {
-          mergedBooks[book.id] = book;
-          await updateBook(book);
+      } else {
+        final db = await database;
+        for (final book in books) {
+          await db?.insert(
+            'books',
+            book.toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
         }
       }
-      return mergedBooks.values.toList();
+    
+      return books;
+    } catch (e) {
+      debugPrint('⚠️ Failed to load from Supabase, using local cache: $e');
+    
+      // Fallback to local cache if Supabase fails
+      if (kIsWeb) {
+        return await webStorage.getAllBooks();
+      } else {
+        final db = await database;
+        final List<Map<String, dynamic>> maps = await db!.query('books');
+        return List.generate(maps.length, (i) => Book.fromMap(maps[i]));
+      }
     }
   }
 
@@ -272,32 +309,103 @@ class DatabaseHelper {
   }
 
   Future<void> updateBook(Book book) async {
+    // ✅ UPDATE SUPABASE FIRST
+    try {
+      await _supabase
+          .from('books')
+          .update(book.toMap())
+          .eq('id', book.id);
+      debugPrint('✅ Updated book in Supabase: ${book.title}');
+    } catch (e) {
+      debugPrint('❌ Failed to update book in Supabase: $e');
+      throw Exception('Failed to update book in cloud: $e');
+    }
+
+    // Then update locally
     if (kIsWeb) {
       await webStorage.updateBook(book);
-      await _syncBookToSupabase(book);
     } else {
       final db = await database;
-      await db!.update(
+      await db?.update(
         'books',
         book.toMap(),
         where: 'id = ?',
         whereArgs: [book.id],
       );
-      await _logSync('books', book.id, 'update');
-      await _syncBookToSupabase(book);
     }
+  }
+
+  Future<void> deleteBook(String bookId) async {
+    if (kIsWeb) {
+      await webStorage.deleteBook(bookId);
+    } else {
+      final db = await database;
+      
+      // Delete related data first (due to foreign keys)
+      await db!.delete('penalties', where: 'book_id = ?', whereArgs: [bookId]);
+      await db.delete('borrow_records', where: 'book_id = ?', whereArgs: [bookId]);
+      
+      // Then delete the book
+      await db.delete('books', where: 'id = ?', whereArgs: [bookId]);
+    }
+    
+    // Delete from Supabase
+    try {
+      final supabaseClient = Supabase.instance.client;
+      if (supabaseClient.auth.currentUser != null) {
+        await supabaseClient.from('penalties').delete().eq('book_id', bookId);
+        await supabaseClient.from('borrow_records').delete().eq('book_id', bookId);
+        await supabaseClient.from('books').delete().eq('id', bookId);
+      }
+    } catch (e) {
+      debugPrint('Failed to delete book from Supabase: $e');
+    }
+    
+    debugPrint('Book $bookId deleted successfully');
   }
 
   // Borrow record methods
   Future<void> insertBorrowRecord(BorrowRecord record) async {
+    // ✅ Helper function to check if string is valid UUID
+    bool isValidUuid(String? value) {
+      if (value == null || value.isEmpty) return false;
+      final uuidPattern = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+        caseSensitive: false,
+      );
+      return uuidPattern.hasMatch(value);
+    }
+
+    // ✅ SAVE TO SUPABASE FIRST
+    try {
+      final supabaseData = Map<String, dynamic>.from(record.toMap());
+    
+      // Remove invalid UUIDs
+      if (!isValidUuid(supabaseData['approved_by'])) {
+        supabaseData.remove('approved_by');
+      }
+    
+      if (!isValidUuid(supabaseData['return_approved_by'])) {
+        supabaseData.remove('return_approved_by');
+      }
+
+      await _supabase.from('borrow_records').upsert(supabaseData);
+      debugPrint('✅ Saved borrow record to Supabase: ${record.id}');
+    } catch (e) {
+      debugPrint('❌ Failed to save borrow record to Supabase: $e');
+      throw Exception('Failed to save borrow record to cloud: $e');
+    }
+
+    // Then save locally
     if (kIsWeb) {
       await webStorage.insertBorrowRecord(record);
-      await _syncBorrowRecordToSupabase(record);
     } else {
       final db = await database;
-      await db!.insert('borrow_records', record.toMap());
-      await _logSync('borrow_records', record.id, 'insert');
-      await _syncBorrowRecordToSupabase(record);
+      await db?.insert(
+        'borrow_records',
+        record.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
   }
 
@@ -354,34 +462,25 @@ class DatabaseHelper {
     }
   }
 
-  // Add this method after the existing borrow record methods
+  // Add these methods if they don't exist:
   Future<List<BorrowRecord>> getAllActiveBorrowings() async {
     if (kIsWeb) {
-      final records = await webStorage.getAllBorrowRecords();
-      return records.where((record) => 
-          record.status == 'borrowed' || 
-          record.status == 'pending' || 
-          record.status == 'approved').toList();
+      return await webStorage.getAllActiveBorrowings();
     } else {
       final db = await database;
-      if (db == null) return []; // Return empty list instead of null
-      
-      final List<Map<String, dynamic>> maps = await db.query(
+      final List<Map<String, dynamic>> maps = await db!.query(
         'borrow_records',
         where: 'status IN (?, ?, ?)',
-        whereArgs: ['borrowed', 'pending', 'approved'],
+        whereArgs: ['borrowed', 'return_requested', 'approved'],
         orderBy: 'created_at DESC',
       );
       return List.generate(maps.length, (i) => BorrowRecord.fromMap(maps[i]));
     }
   }
 
-  // Add this method to DatabaseHelper class:
   Future<List<BorrowRecord>> getBorrowRecordsByStatus(String status) async {
     if (kIsWeb) {
-      final allRecords = await webStorage.getAllBorrowRecords();
-      return allRecords.where((record) => record.status == status).toList()
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return await webStorage.getBorrowRecordsByStatus(status);
     } else {
       final db = await database;
       final List<Map<String, dynamic>> maps = await db!.query(
@@ -396,14 +495,25 @@ class DatabaseHelper {
 
   // Penalty methods
   Future<void> insertPenalty(Penalty penalty) async {
+    // ✅ SAVE TO SUPABASE FIRST
+    try {
+      await _supabase.from('penalties').insert(penalty.toMap());
+      debugPrint('✅ Saved penalty to Supabase: ${penalty.id}');
+    } catch (e) {
+      debugPrint('❌ Failed to save penalty to Supabase: $e');
+      throw Exception('Failed to save penalty to cloud: $e');
+    }
+
+    // Then save locally
     if (kIsWeb) {
       await webStorage.insertPenalty(penalty);
-      await _syncPenaltyToSupabase(penalty);
     } else {
       final db = await database;
-      await db!.insert('penalties', penalty.toMap());
-      await _logSync('penalties', penalty.id, 'insert');
-      await _syncPenaltyToSupabase(penalty);
+      await db?.insert(
+        'penalties',
+        penalty.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
   }
 
@@ -425,7 +535,6 @@ class DatabaseHelper {
   Future<void> updatePenalty(Penalty penalty) async {
     if (kIsWeb) {
       await webStorage.updatePenalty(penalty);
-      await _syncPenaltyToSupabase(penalty);
     } else {
       final db = await database;
       await db!.update(
@@ -434,21 +543,86 @@ class DatabaseHelper {
         where: 'id = ?',
         whereArgs: [penalty.id],
       );
-      await _logSync('penalties', penalty.id, 'update');
+    }
+    
+    // Sync to Supabase
+    try {
       await _syncPenaltyToSupabase(penalty);
+    } catch (e) {
+      debugPrint('Failed to sync penalty to Supabase: $e');
     }
   }
 
-  // Add this method to get all users
+  // Add these methods to your DatabaseHelper class:
+
   Future<List<app_models.User>> getAllUsers() async {
     if (kIsWeb) {
       return await webStorage.getAllUsers();
     } else {
       final db = await database;
-      if (db == null) return []; // Return empty list instead of null
-      
-      final List<Map<String, dynamic>> maps = await db.query('users');
+      final List<Map<String, dynamic>> maps = await db!.query(
+        'users',
+        orderBy: 'created_at DESC',
+      );
       return List.generate(maps.length, (i) => app_models.User.fromMap(maps[i]));
+    }
+  }
+
+  Future<List<BorrowRecord>> getAllBorrowRecords() async {
+    // ✅ LOAD FROM SUPABASE FIRST
+    try {
+      final response = await _supabase
+          .from('borrow_records')
+          .select()
+          .order('created_at', ascending: false);
+    
+      final records = (response as List)
+          .map((json) => BorrowRecord.fromMap(json))
+          .toList();
+    
+      debugPrint('✅ Loaded ${records.length} borrow records from Supabase');
+    
+      // Cache locally
+      if (kIsWeb) {
+        for (final record in records) {
+          await webStorage.insertBorrowRecord(record);
+        }
+      } else {
+        final db = await database;
+        for (final record in records) {
+          await db?.insert(
+            'borrow_records',
+            record.toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
+        }
+      }
+    
+      return records;
+    } catch (e) {
+      debugPrint('⚠️ Failed to load from Supabase, using local cache: $e');
+    
+      // Fallback to local cache
+      if (kIsWeb) {
+        return await webStorage.getAllBorrowRecords();
+      } else {
+        final db = await database;
+        final List<Map<String, dynamic>> maps = await db!.query('borrow_records');
+        return List.generate(maps.length, (i) => BorrowRecord.fromMap(maps[i]));
+      }
+    }
+  }
+
+  Future<List<Penalty>> getAllPenalties() async {
+    if (kIsWeb) {
+      return await webStorage.getAllPenalties();
+    } else {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db!.query(
+        'penalties',
+        orderBy: 'created_at DESC',
+      );
+      return List.generate(maps.length, (i) => Penalty.fromMap(maps[i]));
     }
   }
 
@@ -578,15 +752,20 @@ class DatabaseHelper {
 
   Future<void> _syncPenaltyToSupabase(Penalty penalty) async {
     try {
-      await _supabase.from('penalties').upsert(penalty.toSupabaseMap());
+      final supabaseClient = Supabase.instance.client;
+      if (supabaseClient.auth.currentUser != null) {
+        await supabaseClient.from('penalties').upsert(penalty.toMap());
+        debugPrint('Penalty synced to Supabase: ${penalty.id}');
+      }
     } catch (e) {
-      debugPrint('Failed to sync penalty to Supabase: $e');
+      debugPrint('Error syncing penalty to Supabase: $e');
+      rethrow;
     }
   }
 
   Future<void> clearAllData() async {
     if (kIsWeb) {
-      await webStorage.clearAllData();
+      await webStorage.clearAllTables();
     } else {
       final db = await database;
       await db?.delete('users');
@@ -597,11 +776,93 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> close() async {
+  Future<void> clearBooksTable() async {
     if (kIsWeb) {
-      await webStorage.close();
+      await webStorage.clearBooksTable();
     } else {
-      await _database?.close();
+      final db = await database;
+      await db?.delete('books');
+    }
+  }
+
+  Future<void> clearUsersTable() async {
+    if (kIsWeb) {
+      await webStorage.clearUsersTable();
+    } else {
+      final db = await database;
+      await db?.delete('users');
+      await db?.delete('borrow_records');
+      await db?.delete('penalties');
+    }
+  }
+
+  Future<void> clearBorrowRecordsTable() async {
+    if (kIsWeb) {
+      await webStorage.clearBorrowRecordsTable();
+    } else {
+      final db = await database;
+      await db?.delete('borrow_records');
+    }
+  }
+
+  Future<void> resetAllBookAvailability() async {
+    if (kIsWeb) {
+      // For web, get all books and update them individually
+      final books = await webStorage.getAllBooks();
+      for (var book in books) {
+        final updatedBook = Book(
+          id: book.id,
+          title: book.title,
+          author: book.author,
+          isbn: book.isbn,
+          genre: book.genre,
+          description: book.description,
+          imageUrl: book.imageUrl,
+          totalCopies: book.totalCopies,
+          availableCopies: book.totalCopies,
+          createdAt: book.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        await webStorage.updateBook(updatedBook);
+      }
+    } else {
+      final db = await database;
+      await db?.rawUpdate('UPDATE books SET available_copies = total_copies');
+    }
+  }
+
+  Future<void> deleteBooksByGenre(String genre) async {
+    final db = await database;
+    await db?.delete('books', where: 'genre = ?', whereArgs: [genre]);
+  }
+
+  Future<void> deleteBooksByAuthor(String author) async {
+    final db = await database;
+    await db?.delete('books', where: 'author = ?', whereArgs: [author]);
+  }
+
+  Future<void> deleteUser(String id) async {
+    final db = await database;
+    await db?.delete('users', where: 'id = ?', whereArgs: [id]);
+    await db?.delete('borrow_records', where: 'user_id = ?', whereArgs: [id]);
+    await db?.delete('penalties', where: 'user_id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deleteBorrowRecord(String id) async {
+    final db = await database;
+    await db?.delete('borrow_records', where: 'id = ?', whereArgs: [id]);
+    await db?.delete('penalties', where: 'borrow_record_id = ?', whereArgs: [id]);
+  }
+
+  Future<void> deletePenalty(String id) async {
+    final db = await database;
+    await db?.delete('penalties', where: 'id = ?', whereArgs: [id]);
+  }
+
+  Future<void> close() async {
+    final db = _database;
+    if (db != null) {
+      await db.close();
       _database = null;
     }
   }

@@ -21,14 +21,14 @@ class User {
 
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'],
-      email: map['email'],
-      fullName: map['full_name'],
-      studentId: map['student_id'],
-      phoneNumber: map['phone_number'],
-      isAdmin: (map['is_admin'] ?? 0) == 1,
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      id: map['id'] ?? '',
+      email: map['email'] ?? '',
+      fullName: map['full_name'] ?? '',
+      studentId: map['student_id'] ?? '',
+      phoneNumber: map['phone_number'] ?? '',
+      isAdmin: map['is_admin'] == 1 || map['is_admin'] == true,
+      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -52,7 +52,7 @@ class User {
       'full_name': fullName,
       'student_id': studentId,
       'phone_number': phoneNumber,
-      'is_admin': false,
+      'is_admin': isAdmin,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -60,13 +60,14 @@ class User {
 
   factory User.fromSupabaseMap(Map<String, dynamic> map) {
     return User(
-      id: map['id'],
-      email: map['email'],
-      fullName: map['full_name'],
-      studentId: map['student_id'],
-      phoneNumber: map['phone_number'],
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      id: map['id'] ?? '',
+      email: map['email'] ?? '',
+      fullName: map['full_name'] ?? '',
+      studentId: map['student_id'] ?? '',
+      phoneNumber: map['phone_number'] ?? '',
+      isAdmin: map['is_admin'] == true || map['is_admin'] == 1,
+      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 }

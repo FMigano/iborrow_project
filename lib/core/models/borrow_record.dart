@@ -4,17 +4,17 @@ class BorrowRecord {
   final String id;
   final String userId;
   final String bookId;
-  final String status; // pending, approved, borrowed, return_requested, returned, rejected
+  final String status;
   final DateTime requestDate;
   final DateTime? approvedDate;
   final DateTime? borrowDate;
   final DateTime? dueDate;
-  final DateTime? returnRequestDate; // Make sure this exists
+  final DateTime? returnRequestDate;
   final DateTime? returnDate;
   final String? approvedBy;
   final String? returnApprovedBy;
   final String? notes;
-  final String? returnNotes; // Make sure this exists
+  final String? returnNotes;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -39,7 +39,6 @@ class BorrowRecord {
     required this.updatedAt,
   });
 
-  // Add this getter
   bool get isOverdue {
     return dueDate != null && 
            DateTime.now().isAfter(dueDate!) && 
@@ -72,8 +71,8 @@ class BorrowRecord {
       id: map['id'] ?? '',
       userId: map['user_id'] ?? '',
       bookId: map['book_id'] ?? '',
-      status: map['status'] ?? '',
-      requestDate: DateTime.parse(map['request_date']),
+      status: map['status'] ?? 'pending',
+      requestDate: DateTime.parse(map['request_date'] ?? DateTime.now().toIso8601String()),
       approvedDate: map['approved_date'] != null ? DateTime.parse(map['approved_date']) : null,
       borrowDate: map['borrow_date'] != null ? DateTime.parse(map['borrow_date']) : null,
       dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
@@ -83,8 +82,8 @@ class BorrowRecord {
       returnApprovedBy: map['return_approved_by'],
       notes: map['notes'],
       returnNotes: map['return_notes'],
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 

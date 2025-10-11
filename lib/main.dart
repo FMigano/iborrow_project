@@ -4,16 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'core/config/app_config.dart';
+import 'core/database/database_helper.dart';
 import 'core/services/sync_manager.dart';
 import 'core/services/notification_service.dart';
-import 'core/services/sample_data_service.dart';
-import 'core/router/app_router.dart'; // Import your router
+import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/books/providers/books_provider.dart';
 import 'features/borrowing/providers/borrowing_provider.dart';
 
-// Import workmanager only on mobile platforms
 import 'package:workmanager/workmanager.dart' if (dart.library.html) 'core/services/workmanager_stub.dart';
 
 @pragma('vm:entry-point')
@@ -33,56 +32,39 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize timezone
-  tz.initializeTimeZones();
-
   // Initialize Supabase
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
 
-  // Initialize Workmanager for background sync (skip on web)
-  if (!kIsWeb) {
-    try {
-      await Workmanager().initialize(callbackDispatcher, isInDebugMode: true);
-    } catch (e) {
-      debugPrint('Workmanager initialization failed: $e');
-    }
-  } else {
-    debugPrint('Skipping Workmanager initialization on web platform');
-  }
+  // ✅ Pre-initialize database
+  await DatabaseHelper().database;
 
-  // Initialize services
-  await NotificationService.initialize();
-  await SyncManager.initialize();
-
-  // Insert sample data
-  final sampleDataService = SampleDataService();
-  await sampleDataService.insertSampleData();
-
-  runApp(const IBorrowApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => BooksProvider()), // ✅ Auto-loads books
+        ChangeNotifierProvider(create: (_) => BorrowingProvider()), // ✅ Auto-loads borrowings
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
-class IBorrowApp extends StatelessWidget {
-  const IBorrowApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => BooksProvider()),
-        ChangeNotifierProvider(create: (_) => BorrowingProvider()),
-      ],
-      child: MaterialApp.router(
-        title: 'iBorrow',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        routerConfig: AppRouter.router, // USE YOUR ACTUAL ROUTER HERE!
-        debugShowCheckedModeBanner: false,
-      ),
+    return MaterialApp.router(
+      title: 'iBorrow',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      routerConfig: AppRouter.router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

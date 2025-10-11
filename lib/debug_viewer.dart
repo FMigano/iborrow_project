@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'core/database/database_helper.dart';
 import 'core/models/book.dart';
-import 'core/models/user.dart';
+import 'core/models/user.dart' as app_models; // Add alias
 import 'core/models/borrow_record.dart';
 
 class DatabaseViewerScreen extends StatefulWidget {
@@ -15,7 +15,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
   late TabController _tabController;
   final DatabaseHelper _db = DatabaseHelper();
   
-  List<User> users = [];
+  List<app_models.User> users = []; // Use alias here
   List<Book> books = [];
   List<BorrowRecord> borrowings = [];
   bool isLoading = true;
@@ -33,7 +33,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
     try {
       final loadedUsers = await _db.getAllUsers();
       final loadedBooks = await _db.getAllBooks();
-      final loadedBorrowings = await _db.getAllActiveBorrowings();
+      final loadedBorrowings = await _db.getAllBorrowRecords(); // Changed method name
       
       setState(() {
         users = loadedUsers;

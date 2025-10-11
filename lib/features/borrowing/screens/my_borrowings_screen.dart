@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/borrow_record.dart';
 import '../../../core/models/penalty.dart';
 import '../providers/borrowing_provider.dart';
@@ -22,92 +23,146 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     
+    // ✅ Reload data when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      if (auth.currentUser != null) {
-        Provider.of<BorrowingProvider>(context, listen: false)
-            .loadUserData(auth.currentUser!.id);
-      }
+      _refreshData();
     });
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  Future<void> _refreshData() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+
+    if (authProvider.currentUser != null) {
+      debugPrint('🔄 Refreshing borrowings for user: ${authProvider.currentUser!.id}');
+      await borrowingProvider.loadUserBorrowings(authProvider.currentUser!.id);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final borrowingProvider = Provider.of<BorrowingProvider>(context);
+
+    if (authProvider.currentUser == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('My Borrowings')),
+        body: const Center(
+          child: Text('Please log in to view your borrowings'),
+        ),
+      );
+    }
+
+    // ✅ Use provider data (already loaded)
+    final userBorrowings = borrowingProvider.userBorrowings
+        .where((b) => b.userId == authProvider.currentUser!.id)
+        .toList();
+
+    final currentBorrowings = userBorrowings
+        .where((b) => b.status == 'borrowed')
+        .toList();
+
+    final historyBorrowings = userBorrowings
+        .where((b) => b.status == 'returned' || b.status == 'rejected')
+        .toList();
+
+    final userPenalties = borrowingProvider.penalties
+        .where((p) => p.userId == authProvider.currentUser!.id)
+        .toList();
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Books'),
+        title: Text('My Borrowings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Current', icon: Icon(Icons.library_books)),
-            Tab(text: 'History', icon: Icon(Icons.history)),
-            Tab(text: 'Penalties', icon: Icon(Icons.payment)),
+          tabs: [
+            Tab(
+              icon: const Icon(Icons.bookmark),
+              text: 'Current (${currentBorrowings.length})',
+            ),
+            Tab(
+              icon: const Icon(Icons.history),
+              text: 'History (${historyBorrowings.length})',
+            ),
+            Tab(
+              icon: const Icon(Icons.warning),
+              text: 'Penalties (${userPenalties.length})',
+            ),
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _CurrentBorrowingsTab(),
-          _BorrowingHistoryTab(),
-          _PenaltiesTab(),
-        ],
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: TabBarView(
+          controller: _tabController,
+          children: [
+            _buildCurrentTab(currentBorrowings),
+            _buildHistoryTab(historyBorrowings),
+            _buildPenaltiesTab(userPenalties),
+          ],
+        ),
       ),
     );
   }
-}
 
-class _CurrentBorrowingsTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<BorrowingProvider>(
-      builder: (context, borrowing, child) {
-        if (borrowing.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
+  Widget _buildCurrentTab(List<BorrowRecord> currentBorrowings) {
+    if (currentBorrowings.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.library_books_outlined,
+        title: 'No current borrowings',
+        subtitle: 'Browse books to start borrowing',
+      );
+    }
 
-        final currentBorrowings = borrowing.userBorrowings
-            .where((record) => 
-                record.status == 'pending' || 
-                record.status == 'approved' || 
-                record.status == 'borrowed')
-            .toList();
-
-        if (currentBorrowings.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.library_books_outlined,
-            title: 'No current borrowings',
-            subtitle: 'Browse books to start borrowing',
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: () async {
-            final auth = Provider.of<AuthProvider>(context, listen: false);
-            if (auth.currentUser != null) {
-              await borrowing.loadUserData(auth.currentUser!.id);
-            }
-          },
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: currentBorrowings.length,
-            itemBuilder: (context, index) {
-              final record = currentBorrowings[index];
-              return _buildBorrowingCard(context, record, borrowing);
-            },
-          ),
-        );
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: currentBorrowings.length,
+      itemBuilder: (context, index) {
+        final record = currentBorrowings[index];
+        return _buildBorrowingCard(context, record);
       },
     );
   }
 
-  Widget _buildBorrowingCard(BuildContext context, BorrowRecord record, BorrowingProvider borrowing) {
+  Widget _buildHistoryTab(List<BorrowRecord> historyBorrowings) {
+    if (historyBorrowings.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.history,
+        title: 'No borrowing history',
+        subtitle: 'Your past borrowings will appear here',
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: historyBorrowings.length,
+      itemBuilder: (context, index) {
+        final record = historyBorrowings[index];
+        return _buildHistoryCard(context, record);
+      },
+    );
+  }
+
+  Widget _buildPenaltiesTab(List<Penalty> userPenalties) {
+    if (userPenalties.isEmpty) {
+      return _buildEmptyState(
+        icon: Icons.payment_outlined,
+        title: 'No penalties',
+        subtitle: 'Keep returning books on time!',
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: userPenalties.length,
+      itemBuilder: (context, index) {
+        final penalty = userPenalties[index];
+        return _buildPenaltyCard(context, penalty);
+      },
+    );
+  }
+
+  Widget _buildBorrowingCard(BuildContext context, BorrowRecord record) {
     final isOverdue = record.dueDate != null && 
         DateTime.now().isAfter(record.dueDate!) && 
         record.status == 'borrowed';
@@ -223,7 +278,7 @@ class _CurrentBorrowingsTab extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _requestReturn(context, record.id, borrowing),
+                  onPressed: () => _requestReturn(context, record.id),
                   icon: const Icon(Icons.assignment_return),
                   label: const Text('Request Return'),
                   style: ElevatedButton.styleFrom(
@@ -240,7 +295,7 @@ class _CurrentBorrowingsTab extends StatelessWidget {
   }
 
   // Add this method to handle return requests:
-  Future<void> _requestReturn(BuildContext context, String recordId, BorrowingProvider borrowing) async {
+  Future<void> _requestReturn(BuildContext context, String recordId) async {
     final notes = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -277,7 +332,7 @@ class _CurrentBorrowingsTab extends StatelessWidget {
     );
 
     if (notes != null && context.mounted) {
-      final success = await borrowing.requestBookReturn(recordId, returnNotes: notes.isNotEmpty ? notes : null);
+      final success = await Provider.of<BorrowingProvider>(context, listen: false).requestBookReturn(recordId, returnNotes: notes.isNotEmpty ? notes : null);
       
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -288,42 +343,6 @@ class _CurrentBorrowingsTab extends StatelessWidget {
         );
       }
     }
-  }
-}
-
-class _BorrowingHistoryTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<BorrowingProvider>(
-      builder: (context, borrowing, child) {
-        if (borrowing.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        final historyBorrowings = borrowing.userBorrowings
-            .where((record) => 
-                record.status == 'returned' || 
-                record.status == 'rejected')
-            .toList();
-
-        if (historyBorrowings.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.history,
-            title: 'No borrowing history',
-            subtitle: 'Your past borrowings will appear here',
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: historyBorrowings.length,
-          itemBuilder: (context, index) {
-            final record = historyBorrowings[index];
-            return _buildHistoryCard(context, record);
-          },
-        );
-      },
-    );
   }
 
   Widget _buildHistoryCard(BuildContext context, BorrowRecord record) {
@@ -409,77 +428,8 @@ class _BorrowingHistoryTab extends StatelessWidget {
       ),
     );
   }
-}
 
-class _PenaltiesTab extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<BorrowingProvider>(
-      builder: (context, borrowing, child) {
-        if (borrowing.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (borrowing.userPenalties.isEmpty) {
-          return _buildEmptyState(
-            icon: Icons.payment_outlined,
-            title: 'No penalties',
-            subtitle: 'Keep returning books on time!',
-          );
-        }
-
-        return Column(
-          children: [
-            // Total Penalties Summary
-            Container(
-              width: double.infinity,
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: borrowing.totalPendingPenalties > 0 
-                    ? Colors.red.withValues(alpha: 0.1)
-                    : Colors.green.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: borrowing.totalPendingPenalties > 0 ? Colors.red : Colors.green,
-                ),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Total Outstanding',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '\$${borrowing.totalPendingPenalties.toStringAsFixed(2)}',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: borrowing.totalPendingPenalties > 0 ? Colors.red : Colors.green,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Penalties List
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: borrowing.userPenalties.length,
-                itemBuilder: (context, index) {
-                  final penalty = borrowing.userPenalties[index];
-                  return _buildPenaltyCard(context, penalty, borrowing);
-                },
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildPenaltyCard(BuildContext context, Penalty penalty, BorrowingProvider borrowing) {
+  Widget _buildPenaltyCard(BuildContext context, Penalty penalty) {
     final isPaid = penalty.status == 'paid';
     
     return Card(
@@ -514,11 +464,20 @@ class _PenaltiesTab extends StatelessWidget {
                           color: Colors.grey[600],
                         ),
                       ),
-                      if (penalty.paidAt != null) ...[
+                      if (penalty.paidDate != null) ...[
                         Text(
-                          'Paid: ${DateFormat('MMM dd, yyyy').format(penalty.paidAt!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          'Paid: ${DateFormat('MMM dd, yyyy').format(penalty.paidDate!)}',
+                          style: const TextStyle(
                             color: Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          'Status: ${penalty.status.toUpperCase()}',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
@@ -550,7 +509,7 @@ class _PenaltiesTab extends StatelessWidget {
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    final success = await borrowing.payPenalty(penalty.id);
+                    final success = await Provider.of<BorrowingProvider>(context, listen: false).payPenalty(penalty.id);
                     if (success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

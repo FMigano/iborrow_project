@@ -16,40 +16,50 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-
-  late final List<Widget> _screens;
-
+  int _selectedIndex = 0;
+  
+  final List<Widget> _screens = const [
+    BooksScreen(),
+    MyBorrowingsScreen(),
+    ProfileScreen(),
+  ];
+  
   @override
   void initState() {
     super.initState();
-    _screens = [
-      const BooksScreen(),
-      const MyBorrowingsScreen(),
-      const ProfileScreen(),
-    ];
     
+    // ✅ Load data when home screen is first displayed
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final auth = Provider.of<AuthProvider>(context, listen: false);
-      final borrowing = Provider.of<BorrowingProvider>(context, listen: false);
-      
-      if (auth.currentUser != null) {
-        borrowing.loadUserData(auth.currentUser!.id);
-      }
-      
-      Provider.of<BooksProvider>(context, listen: false).loadBooks();
+      _loadInitialData();
     });
+  }
+
+  Future<void> _loadInitialData() async {
+    debugPrint('🏠 Loading initial data for home screen...');
+    
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+    final booksProvider = Provider.of<BooksProvider>(context, listen: false);
+
+    // Load books (already auto-loads, but refresh to be sure)
+    await booksProvider.loadBooks();
+
+    // Load user-specific borrowings if logged in
+    if (authProvider.currentUser != null) {
+      debugPrint('👤 Loading data for user: ${authProvider.currentUser!.id}');
+      await borrowingProvider.loadUserBorrowings(authProvider.currentUser!.id);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: _selectedIndex,
         onDestinationSelected: (index) {
           setState(() {
-            _currentIndex = index;
+            _selectedIndex = index;
           });
         },
         destinations: const [

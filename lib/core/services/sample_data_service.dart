@@ -1,223 +1,216 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import '../database/database_helper.dart';
 import '../models/book.dart';
-import '../models/user.dart';
-import '../models/borrow_record.dart';
 import 'package:uuid/uuid.dart';
 
 class SampleDataService {
-  static const _uuid = Uuid();
   final DatabaseHelper _databaseHelper = DatabaseHelper();
+  final _uuid = const Uuid();
 
-  Future<void> insertSampleData() async {
-    // Check if data already exists
-    final existingBooks = await _databaseHelper.getAllBooks();
-    if (existingBooks.isNotEmpty) {
-      debugPrint('Sample data already exists');
-      return;
-    }
-
-    debugPrint('Inserting sample data...');
-
-    // Sample books (your existing code)
-    final now = DateTime.now();
-    final sampleBooks = [
+  List<Book> getSampleBooks() {
+    return [
       Book(
         id: _uuid.v4(),
-        title: 'The Great Gatsby',
-        author: 'F. Scott Fitzgerald',
-        isbn: '978-0-7432-7356-5',
-        genre: 'Fiction',
-        description: 'A classic American novel set in the Jazz Age.',
-        totalCopies: 3,
-        availableCopies: 3, // Changed to simulate borrowed books
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Book(
-        id: _uuid.v4(),
-        title: 'To Kill a Mockingbird',
-        author: 'Harper Lee',
-        isbn: '978-0-06-112008-4',
-        genre: 'Fiction',
-        description: 'A gripping tale of racial injustice and childhood innocence.',
-        totalCopies: 3,
-        availableCopies: 3,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Book(
-        id: _uuid.v4(),
-        title: '1984',
-        author: 'George Orwell',
-        isbn: '978-0-452-28423-4',
-        genre: 'Dystopian Fiction',
-        description: 'A dystopian social science fiction novel.',
-        totalCopies: 2,
-        availableCopies: 2, // Changed to simulate borrowed books
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Book(
-        id: _uuid.v4(),
-        title: 'Introduction to Algorithms',
-        author: 'Thomas H. Cormen',
-        isbn: '978-0-262-03384-8',
+        title: 'The Psychology of Computer Programming',
+        author: 'Gerald M. Weinberg',
+        isbn: '978-0932633422',
         genre: 'Technology',
-        description: 'Comprehensive guide to algorithms and data structures.',
-        totalCopies: 5,
-        availableCopies: 5,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Book(
-        id: _uuid.v4(),
-        title: 'Clean Code',
-        author: 'Robert C. Martin',
-        isbn: '978-0-132-35088-4',
-        genre: 'Technology',
-        description: 'A handbook of agile software craftsmanship.',
-        totalCopies: 4,
-        availableCopies: 4,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Book(
-        id: _uuid.v4(),
-        title: 'Sapiens',
-        author: 'Yuval Noah Harari',
-        isbn: '978-0-06-231609-7',
-        genre: 'History',
-        description: 'A brief history of humankind.',
-        totalCopies: 3,
-        availableCopies: 3,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      Book(
-        id: _uuid.v4(),
-        title: 'The Lean Startup',
-        author: 'Eric Ries',
-        isbn: '978-0-307-88789-4',
-        genre: 'Business',
-        description: 'How constant innovation creates radically successful businesses.',
+        description: 'Classic book on software engineering psychology.',
         totalCopies: 2,
         availableCopies: 2,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       ),
       Book(
         id: _uuid.v4(),
         title: 'Atomic Habits',
         author: 'James Clear',
-        isbn: '978-0-735-21129-2',
+        isbn: '978-0735211292',
         genre: 'Self-Help',
         description: 'An easy and proven way to build good habits and break bad ones.',
         totalCopies: 4,
         availableCopies: 4,
-        createdAt: now,
-        updatedAt: now,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'The Lean Startup',
+        author: 'Eric Ries',
+        isbn: '978-0307887894',
+        genre: 'Business',
+        description: 'How Today\'s Entrepreneurs Use Continuous Innovation to Create Radically Successful Businesses.',
+        totalCopies: 2,
+        availableCopies: 2,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'Clean Code',
+        author: 'Robert C. Martin',
+        isbn: '978-0132350884',
+        genre: 'Technology',
+        description: 'A Handbook of Agile Software Craftsmanship.',
+        totalCopies: 3,
+        availableCopies: 3,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'Sapiens',
+        author: 'Yuval Noah Harari',
+        isbn: '978-0062316097',
+        genre: 'History',
+        description: 'A Brief History of Humankind.',
+        totalCopies: 5,
+        availableCopies: 5,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'Thinking, Fast and Slow',
+        author: 'Daniel Kahneman',
+        isbn: '978-0374533557',
+        genre: 'Psychology',
+        description: 'The groundbreaking tour of the mind explaining the two systems that drive the way we think.',
+        totalCopies: 3,
+        availableCopies: 3,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'The Pragmatic Programmer',
+        author: 'Andrew Hunt & David Thomas',
+        isbn: '978-0135957059',
+        genre: 'Technology',
+        description: 'Your Journey To Mastery, 20th Anniversary Edition.',
+        totalCopies: 2,
+        availableCopies: 2,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'Deep Work',
+        author: 'Cal Newport',
+        isbn: '978-1455586691',
+        genre: 'Self-Help',
+        description: 'Rules for Focused Success in a Distracted World.',
+        totalCopies: 4,
+        availableCopies: 4,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'The Innovator\'s Dilemma',
+        author: 'Clayton M. Christensen',
+        isbn: '978-1633691780',
+        genre: 'Business',
+        description: 'When New Technologies Cause Great Firms to Fail.',
+        totalCopies: 2,
+        availableCopies: 2,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      Book(
+        id: _uuid.v4(),
+        title: 'The Art of Computer Programming',
+        author: 'Donald E. Knuth',
+        isbn: '978-0201896831',
+        genre: 'Technology',
+        description: 'Volume 1: Fundamental Algorithms.',
+        totalCopies: 1,
+        availableCopies: 1,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
       ),
     ];
+  }
 
-    // Insert sample books
-    for (final book in sampleBooks) {
-      await _databaseHelper.insertBook(book);
+  Future<void> insertSampleData() async {
+    try {
+      debugPrint('📚 Checking if sample data already exists...');
+
+      // Check if books exist in Supabase
+      final supabase = Supabase.instance.client;
+      final existingBooks = await supabase.from('books').select().limit(1);
+      
+      if (existingBooks.isNotEmpty) {
+        debugPrint('✅ Sample data already exists in Supabase');
+        // Load from Supabase to local database
+        await _databaseHelper.getAllBooks();
+        return;
+      }
+
+      debugPrint('📝 Inserting fresh sample data to Supabase...');
+
+      // Generate fresh sample books
+      final books = getSampleBooks();
+
+      // Insert books to Supabase
+      for (final book in books) {
+        await supabase.from('books').insert(book.toMap());
+        debugPrint('✅ Inserted book: ${book.title}');
+      }
+
+      // Now sync to local database
+      await _databaseHelper.getAllBooks();
+      
+      debugPrint('✅ Sample data inserted successfully! (${books.length} books)');
+    } catch (e) {
+      debugPrint('❌ Error inserting sample data: $e');
+      rethrow;
     }
-
-    // Create sample users
-    final sampleUsers = [
-      User(
-        id: _uuid.v4(),
-        email: 'john.doe@example.com',
-        fullName: 'John Doe',
-        studentId: 'STU001',
-        phoneNumber: '+1234567890',
-        isAdmin: false,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      User(
-        id: _uuid.v4(),
-        email: 'jane.smith@example.com',
-        fullName: 'Jane Smith',
-        studentId: 'STU002',
-        phoneNumber: '+1234567891',
-        isAdmin: false,
-        createdAt: now,
-        updatedAt: now,
-      ),
-      User(
-        id: _uuid.v4(),
-        email: 'admin@example.com',
-        fullName: 'Admin User',
-        studentId: 'ADM001',
-        phoneNumber: '+1234567892',
-        isAdmin: true,
-        createdAt: now,
-        updatedAt: now,
-      ),
-    ];
-
-    // Insert sample users
-    for (final user in sampleUsers) {
-      await _databaseHelper.insertUser(user);
-    }
-
-    // Create sample borrow records
-    final sampleBorrowRecords = [
-      // Pending request
-      BorrowRecord(
-        id: _uuid.v4(),
-        userId: sampleUsers[0].id, // John Doe
-        bookId: sampleBooks[1].id,  // To Kill a Mockingbird
-        status: 'pending',
-        requestDate: now.subtract(const Duration(hours: 2)),
-        notes: 'Need this for literature class',
-        createdAt: now.subtract(const Duration(hours: 2)),
-        updatedAt: now.subtract(const Duration(hours: 2)),
-      ),
-      // Active borrowing
-      BorrowRecord(
-        id: _uuid.v4(),
-        userId: sampleUsers[0].id, // John Doe
-        bookId: sampleBooks[0].id,  // The Great Gatsby
-        status: 'borrowed',
-        requestDate: now.subtract(const Duration(days: 5)),
-        approvedDate: now.subtract(const Duration(days: 4)),
-        borrowDate: now.subtract(const Duration(days: 4)),
-        dueDate: now.add(const Duration(days: 10)),
-        approvedBy: sampleUsers[2].id, // Admin
-        createdAt: now.subtract(const Duration(days: 5)),
-        updatedAt: now.subtract(const Duration(days: 4)),
-      ),
-      // Overdue book
-      BorrowRecord(
-        id: _uuid.v4(),
-        userId: sampleUsers[1].id, // Jane Smith
-        bookId: sampleBooks[2].id,  // 1984
-        status: 'borrowed',
-        requestDate: now.subtract(const Duration(days: 20)),
-        approvedDate: now.subtract(const Duration(days: 19)),
-        borrowDate: now.subtract(const Duration(days: 19)),
-        dueDate: now.subtract(const Duration(days: 5)), // Overdue!
-        approvedBy: sampleUsers[2].id, // Admin
-        createdAt: now.subtract(const Duration(days: 20)),
-        updatedAt: now.subtract(const Duration(days: 19)),
-      ),
-    ];
-
-    // Insert sample borrow records
-    for (final record in sampleBorrowRecords) {
-      await _databaseHelper.insertBorrowRecord(record);
-    }
-
-    debugPrint('Sample data inserted successfully!');
-    debugPrint('Created ${sampleBooks.length} books, ${sampleUsers.length} users, and ${sampleBorrowRecords.length} borrow records');
   }
 
   Future<void> clearAllData() async {
-    await _databaseHelper.clearAllData();
-    debugPrint('All data cleared!');
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Clear Supabase data (keep users since they sign up themselves)
+      await supabase.from('penalties').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('borrow_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('books').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Clear local data (keep users)
+      await _databaseHelper.clearAllData();
+      
+      debugPrint('🗑️ All data cleared from Supabase and local storage (users preserved)!');
+    } catch (e) {
+      debugPrint('❌ Error clearing data: $e');
+    }
+  }
+
+  Future<void> clearBorrowingDataOnly() async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Clear borrowing data from Supabase
+      await supabase.from('penalties').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('borrow_records').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      
+      // Reset book availability in Supabase
+      final books = await _databaseHelper.getAllBooks();
+      for (final book in books) {
+        await supabase.from('books').update({
+          'available_copies': book.totalCopies,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', book.id);
+      }
+      
+      // Clear local borrowing data
+      await _databaseHelper.clearBorrowRecordsTable();
+      await _databaseHelper.resetAllBookAvailability();
+      
+      debugPrint('✅ Borrowing data cleared, books reset!');
+    } catch (e) {
+      debugPrint('❌ Error clearing borrowing data: $e');
+    }
   }
 }

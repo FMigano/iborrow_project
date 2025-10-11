@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models/book.dart';
 import '../providers/books_provider.dart';
 
@@ -277,8 +278,10 @@ class _BookListScreenState extends State<BookListScreen> {
                   const SizedBox(height: 4),
                   Text(
                     '${book.availableCopies}/${book.totalCopies}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: book.availableCopies > 0 ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],

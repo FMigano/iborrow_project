@@ -35,8 +35,8 @@ class Book {
     String? id,
     String? title,
     String? author,
-    String? isbn,
     String? genre,
+    String? isbn,
     String? description,
     String? imageUrl,
     int? totalCopies,
@@ -48,8 +48,8 @@ class Book {
       id: id ?? this.id,
       title: title ?? this.title,
       author: author ?? this.author,
-      isbn: isbn ?? this.isbn,
       genre: genre ?? this.genre,
+      isbn: isbn ?? this.isbn,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
       totalCopies: totalCopies ?? this.totalCopies,
@@ -61,17 +61,17 @@ class Book {
 
   factory Book.fromMap(Map<String, dynamic> map) {
     return Book(
-      id: map['id'],
-      title: map['title'],
-      author: map['author'],
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      author: map['author'] ?? '',
+      genre: map['genre'] ?? '',
       isbn: map['isbn'],
-      genre: map['genre'],
       description: map['description'],
       imageUrl: map['image_url'],
-      totalCopies: map['total_copies'] ?? 1,
-      availableCopies: map['available_copies'] ?? 1,
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      totalCopies: map['total_copies'] ?? 0,
+      availableCopies: map['available_copies'] ?? 0,
+      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -93,17 +93,17 @@ class Book {
 
   factory Book.fromSupabaseMap(Map<String, dynamic> map) {
     return Book(
-      id: map['id'],
-      title: map['title'],
-      author: map['author'],
+      id: map['id'] ?? '',
+      title: map['title'] ?? '',
+      author: map['author'] ?? '',
+      genre: map['genre'] ?? '',
       isbn: map['isbn'],
-      genre: map['genre'],
       description: map['description'],
       imageUrl: map['image_url'],
-      totalCopies: map['total_copies'] ?? 1,
-      availableCopies: map['available_copies'] ?? 1,
-      createdAt: DateTime.parse(map['created_at']),
-      updatedAt: DateTime.parse(map['updated_at']),
+      totalCopies: map['total_copies'] ?? 0,
+      availableCopies: map['available_copies'] ?? 0,
+      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 

@@ -8,7 +8,7 @@ import '../../../core/services/sample_data_service.dart';
 class BooksProvider extends ChangeNotifier {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   final Uuid _uuid = const Uuid();
-  
+
   List<Book> _books = [];
   List<Book> _filteredBooks = [];
   bool _isLoading = false;
@@ -16,7 +16,10 @@ class BooksProvider extends ChangeNotifier {
   String _searchQuery = '';
   String? selectedGenre;
 
-  List<Book> get books => _filteredBooks.isEmpty && _searchQuery.isEmpty && selectedGenre == null ? _books : _filteredBooks;
+  List<Book> get books =>
+      _filteredBooks.isEmpty && _searchQuery.isEmpty && selectedGenre == null
+          ? _books
+          : _filteredBooks;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
@@ -28,7 +31,7 @@ class BooksProvider extends ChangeNotifier {
   Future<void> _initializeData() async {
     debugPrint('📚 BooksProvider: Initializing data...');
     await loadBooks();
-    
+
     // If no books found, insert sample data
     if (_books.isEmpty) {
       debugPrint('📚 No books found, inserting sample data...');
@@ -49,7 +52,7 @@ class BooksProvider extends ChangeNotifier {
 
       debugPrint('📚 Loading books from Supabase...');
       _books = await _databaseHelper.getAllBooks();
-      
+
       debugPrint('✅ Loaded ${_books.length} books');
 
       _isLoading = false;
@@ -69,19 +72,19 @@ class BooksProvider extends ChangeNotifier {
           .from('books')
           .select()
           .order('created_at', ascending: false);
-      
+
       debugPrint('📥 Found ${response.length} books in Supabase');
-      
+
       for (final bookMap in response) {
         final book = Book.fromMap(bookMap);
         await _databaseHelper.insertBook(book);
         debugPrint('➕ Added book: ${book.title}');
       }
-      
+
       // Reload books
       _books = await _databaseHelper.getAllBooks();
       notifyListeners();
-      
+
       debugPrint('✅ Books synced from Supabase');
     } catch (e) {
       debugPrint('❌ Error syncing books from Supabase: $e');
@@ -157,11 +160,6 @@ class BooksProvider extends ChangeNotifier {
       _setError(e.toString());
       return null;
     }
-  }
-
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
   }
 
   void _setError(String error) {

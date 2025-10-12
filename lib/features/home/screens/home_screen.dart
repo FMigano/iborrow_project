@@ -17,17 +17,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  
+
   final List<Widget> _screens = const [
     BooksScreen(),
     MyBorrowingsScreen(),
     ProfileScreen(),
   ];
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     // ✅ Load data when home screen is first displayed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
@@ -36,9 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadInitialData() async {
     debugPrint('🏠 Loading initial data for home screen...');
-    
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+    final borrowingProvider =
+        Provider.of<BorrowingProvider>(context, listen: false);
     final booksProvider = Provider.of<BooksProvider>(context, listen: false);
 
     // Load books (already auto-loads, but refresh to be sure)
@@ -171,12 +172,12 @@ class ProfileScreen extends StatelessWidget {
                 '👨‍💼 Admin management tools',
                 '🌐 Cross-platform support',
               ].map((feature) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  feature,
-                  style: GoogleFonts.inter(fontSize: 14),
-                ),
-              )),
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      feature,
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  )),
               const SizedBox(height: 16),
               Text(
                 'Contact',
@@ -192,7 +193,7 @@ class ProfileScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                '© 2024 iBorrow. All rights reserved.',
+                '© 2025 iBorrow. All rights reserved.',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   color: Colors.grey[600],
@@ -247,12 +248,12 @@ class ProfileScreen extends StatelessWidget {
                 '5. Check "My Books" for borrowing status',
                 '6. Return books before due date',
               ].map((step) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  step,
-                  style: GoogleFonts.inter(fontSize: 14),
-                ),
-              )),
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      step,
+                      style: GoogleFonts.inter(fontSize: 14),
+                    ),
+                  )),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),
@@ -308,10 +309,11 @@ class ProfileScreen extends StatelessWidget {
         builder: (context, auth, borrowing, child) {
           final user = auth.currentUser;
           final borrowings = borrowing.userBorrowings;
-          
+
           // Calculate statistics
           final totalBorrowed = borrowings.length;
-          final returned = borrowings.where((b) => b.status == 'returned').length;
+          final returned =
+              borrowings.where((b) => b.status == 'returned').length;
           final active = borrowings.where((b) => b.status == 'borrowed').length;
           final overdue = borrowings.where((b) => b.isOverdue).length;
 
@@ -328,11 +330,13 @@ class ProfileScreen extends StatelessWidget {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primary,
                           child: Text(
-                            user?.fullName.isNotEmpty == true 
+                            user?.fullName.isNotEmpty == true
                                 ? user!.fullName.substring(0, 1).toUpperCase()
-                                : user?.email.substring(0, 1).toUpperCase() ?? 'U',
+                                : user?.email.substring(0, 1).toUpperCase() ??
+                                    'U',
                             style: GoogleFonts.poppins(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
@@ -364,7 +368,9 @@ class ProfileScreen extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
                               borderRadius: BorderRadius.circular(16),
                             ),
                             child: Text(
@@ -381,9 +387,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Borrowing Statistics
                 Text(
                   'Borrowing Statistics',
@@ -393,7 +399,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -418,7 +424,7 @@ class ProfileScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                
+
                 Row(
                   children: [
                     Expanded(
@@ -442,9 +448,9 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // User Information
                 Text(
                   'Account Information',
@@ -454,7 +460,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 Card(
                   child: Column(
                     children: [
@@ -487,7 +493,8 @@ class ProfileScreen extends StatelessWidget {
                           leading: const Icon(Icons.badge),
                           title: Text(
                             'Student ID',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
                           ),
                           subtitle: Text(
                             user!.studentId!,
@@ -501,7 +508,8 @@ class ProfileScreen extends StatelessWidget {
                           leading: const Icon(Icons.phone),
                           title: Text(
                             'Phone Number',
-                            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
                           ),
                           subtitle: Text(
                             user!.phoneNumber!,
@@ -526,9 +534,9 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Settings & Actions
                 Text(
                   'Settings & Support',
@@ -538,7 +546,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 Card(
                   child: Column(
                     children: [
@@ -564,9 +572,9 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Sign Out Button
                 SizedBox(
                   width: double.infinity,
@@ -576,7 +584,8 @@ class ProfileScreen extends StatelessWidget {
                         context: context,
                         builder: (context) => AlertDialog(
                           title: const Text('Sign Out'),
-                          content: const Text('Are you sure you want to sign out?'),
+                          content:
+                              const Text('Are you sure you want to sign out?'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context, false),
@@ -592,7 +601,7 @@ class ProfileScreen extends StatelessWidget {
                           ],
                         ),
                       );
-                      
+
                       if (confirmed == true) {
                         await auth.signOut();
                         // Add navigation to login screen after sign out
@@ -610,7 +619,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
               ],
             ),

@@ -24,11 +24,17 @@ class User {
       id: map['id'] ?? '',
       email: map['email'] ?? '',
       fullName: map['full_name'] ?? '',
-      studentId: map['student_id'] ?? '',
-      phoneNumber: map['phone_number'] ?? '',
+      studentId: map['student_id']?.isEmpty == true
+          ? null
+          : map['student_id'], // ✅ Keep null if empty
+      phoneNumber: map['phone_number']?.isEmpty == true
+          ? null
+          : map['phone_number'], // ✅ Keep null if empty
       isAdmin: map['is_admin'] == 1 || map['is_admin'] == true,
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -63,11 +69,17 @@ class User {
       id: map['id'] ?? '',
       email: map['email'] ?? '',
       fullName: map['full_name'] ?? '',
-      studentId: map['student_id'] ?? '',
-      phoneNumber: map['phone_number'] ?? '',
+      studentId: map['student_id']?.isEmpty == true
+          ? null
+          : map['student_id'], // ✅ Keep null if empty
+      phoneNumber: map['phone_number']?.isEmpty == true
+          ? null
+          : map['phone_number'], // ✅ Keep null if empty
       isAdmin: map['is_admin'] == true || map['is_admin'] == 1,
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 }

@@ -7,14 +7,13 @@ import '../../../core/models/penalty.dart';
 
 class BorrowingProvider extends ChangeNotifier {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
-  final _supabase = Supabase.instance.client;
   final _uuid = const Uuid();
 
   List<BorrowRecord> _userBorrowings = [];
   List<BorrowRecord> _pendingRequests = [];
   List<BorrowRecord> _allActiveBorrowings = [];
   List<Penalty> _penalties = [];
-  
+
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -44,13 +43,13 @@ class BorrowingProvider extends ChangeNotifier {
       final allRecords = await _databaseHelper.getAllBorrowRecords();
 
       // Get pending requests
-      _pendingRequests = allRecords
-          .where((r) => r.status == 'pending')
-          .toList();
+      _pendingRequests =
+          allRecords.where((r) => r.status == 'pending').toList();
 
       // ✅ Get active borrowings (borrowed + return_requested ONLY, exclude returned)
       _allActiveBorrowings = allRecords
-          .where((r) => r.status == 'borrowed' || r.status == 'return_requested')
+          .where(
+              (r) => r.status == 'borrowed' || r.status == 'return_requested')
           .toList();
 
       // Get all penalties
@@ -75,12 +74,11 @@ class BorrowingProvider extends ChangeNotifier {
       notifyListeners();
 
       final allRecords = await _databaseHelper.getAllBorrowRecords();
-      
-      _userBorrowings = allRecords
-          .where((r) => r.userId == userId)
-          .toList();
 
-      debugPrint('📊 Loaded ${_userBorrowings.length} borrowings for user $userId');
+      _userBorrowings = allRecords.where((r) => r.userId == userId).toList();
+
+      debugPrint(
+          '📊 Loaded ${_userBorrowings.length} borrowings for user $userId');
 
       _isLoading = false;
       notifyListeners();
@@ -104,7 +102,8 @@ class BorrowingProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> requestBook(String userId, String bookId, {String? notes}) async {
+  Future<bool> requestBook(String userId, String bookId,
+      {String? notes}) async {
     try {
       final borrowRecord = BorrowRecord(
         id: _uuid.v4(), // ✅ This generates proper UUID
@@ -118,9 +117,9 @@ class BorrowingProvider extends ChangeNotifier {
       );
 
       await _databaseHelper.insertBorrowRecord(borrowRecord);
-      
+
       debugPrint('✅ Created borrow record with ID: ${borrowRecord.id}');
-      
+
       await loadUserBorrowings(userId);
       await loadPendingRequests();
       return true;
@@ -132,125 +131,126 @@ class BorrowingProvider extends ChangeNotifier {
 
   // Replace the approveBorrowRequest method with this fixed version:
 
-Future<bool> approveBorrowRequest(String requestId, String adminId) async {
-  try {
-    _setLoading(true);
+  Future<bool> approveBorrowRequest(String requestId, String adminId) async {
+    try {
+      _setLoading(true);
 
-    final request = _pendingRequests.firstWhere(
-      (r) => r.id == requestId,
-      orElse: () => throw Exception('Request not found'),
-    );
+      final request = _pendingRequests.firstWhere(
+        (r) => r.id == requestId,
+        orElse: () => throw Exception('Request not found'),
+      );
 
-    final book = await _databaseHelper.getBookById(request.bookId);
-    if (book == null) {
-      throw Exception('Book not found');
+      final book = await _databaseHelper.getBookById(request.bookId);
+      if (book == null) {
+        throw Exception('Book not found');
+      }
+
+      if (book.availableCopies <= 0) {
+        throw Exception('No copies available');
+      }
+
+      final now = DateTime.now();
+      final dueDate = now.add(const Duration(days: 14));
+
+      // ✅ REMOVE AUTH CHECK - Use requesting user's ID as fallback
+      final supabase = Supabase.instance.client;
+      final currentUser = supabase.auth.currentUser;
+
+      // Always allow approval - use requesting user if no admin logged in
+      final approverUserId = currentUser?.id ?? request.userId;
+
+      debugPrint('✅ Approving with user ID: $approverUserId');
+
+      final updatedRecord = request.copyWith(
+        status: 'borrowed',
+        approvedDate: now,
+        borrowDate: now,
+        dueDate: dueDate,
+        approvedBy: approverUserId,
+        updatedAt: now,
+      );
+
+      // Update in local database
+      await _databaseHelper.insertBorrowRecord(updatedRecord);
+
+      debugPrint('✅ Updated borrow record locally');
+
+      // Update book availability
+      final updatedBook = book.copyWith(
+        availableCopies: book.availableCopies - 1,
+        updatedAt: now,
+      );
+
+      await _databaseHelper.updateBook(updatedBook);
+
+      debugPrint('✅ Updated book availability: ${book.title}');
+
+      await loadPendingRequests();
+
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error approving request: $e');
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
     }
-
-    if (book.availableCopies <= 0) {
-      throw Exception('No copies available');
-    }
-
-    final now = DateTime.now();
-    final dueDate = now.add(const Duration(days: 14));
-
-    // ✅ REMOVE AUTH CHECK - Use requesting user's ID as fallback
-    final supabase = Supabase.instance.client;
-    final currentUser = supabase.auth.currentUser;
-    
-    // Always allow approval - use requesting user if no admin logged in
-    final approverUserId = currentUser?.id ?? request.userId;
-
-    debugPrint('✅ Approving with user ID: $approverUserId');
-
-    final updatedRecord = request.copyWith(
-      status: 'borrowed',
-      approvedDate: now,
-      borrowDate: now,
-      dueDate: dueDate,
-      approvedBy: approverUserId,
-      updatedAt: now,
-    );
-
-    // Update in local database
-    await _databaseHelper.insertBorrowRecord(updatedRecord);
-
-    debugPrint('✅ Updated borrow record locally');
-
-    // Update book availability
-    final updatedBook = book.copyWith(
-      availableCopies: book.availableCopies - 1,
-      updatedAt: now,
-    );
-
-    await _databaseHelper.updateBook(updatedBook);
-
-    debugPrint('✅ Updated book availability: ${book.title}');
-
-    await loadPendingRequests();
-
-    _setLoading(false);
-    return true;
-  } catch (e) {
-    debugPrint('❌ Error approving request: $e');
-    _setError(e.toString());
-    _setLoading(false);
-    return false;
   }
-}
 
 // ✅ Apply the same fix to other methods:
 
-Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reason}) async {
-  try {
-    _setLoading(true);
+  Future<bool> rejectBorrowRequest(String requestId, String adminId,
+      {String? reason}) async {
+    try {
+      _setLoading(true);
 
-    final request = _pendingRequests.firstWhere(
-      (r) => r.id == requestId,
-      orElse: () => throw Exception('Request not found'),
-    );
+      final request = _pendingRequests.firstWhere(
+        (r) => r.id == requestId,
+        orElse: () => throw Exception('Request not found'),
+      );
 
-    final now = DateTime.now();
-    
-    // ✅ Get actual user ID
-    final supabase = Supabase.instance.client;
-    final currentUser = supabase.auth.currentUser;
-    final approverUserId = currentUser?.id ?? request.userId;
+      final now = DateTime.now();
 
-    final updatedRecord = request.copyWith(
-      status: 'rejected',
-      approvedBy: approverUserId, // ✅ Use UUID
-      notes: reason,
-      updatedAt: now,
-    );
+      // ✅ Get actual user ID
+      final supabase = Supabase.instance.client;
+      final currentUser = supabase.auth.currentUser;
+      final approverUserId = currentUser?.id ?? request.userId;
 
-    await _databaseHelper.insertBorrowRecord(updatedRecord);
+      final updatedRecord = request.copyWith(
+        status: 'rejected',
+        approvedBy: approverUserId, // ✅ Use UUID
+        notes: reason,
+        updatedAt: now,
+      );
 
-    await supabase.from('borrow_records').update({
-      'status': 'rejected',
-      'approved_by': approverUserId, // ✅ UUID
-      'notes': reason,
-      'updated_at': now.toIso8601String(),
-    }).eq('id', requestId);
+      await _databaseHelper.insertBorrowRecord(updatedRecord);
 
-    debugPrint('✅ Rejected borrow record in Supabase: $requestId');
+      await supabase.from('borrow_records').update({
+        'status': 'rejected',
+        'approved_by': approverUserId, // ✅ UUID
+        'notes': reason,
+        'updated_at': now.toIso8601String(),
+      }).eq('id', requestId);
 
-    await loadPendingRequests();
+      debugPrint('✅ Rejected borrow record in Supabase: $requestId');
 
-    _setLoading(false);
-    return true;
-  } catch (e) {
-    debugPrint('❌ Error rejecting request: $e');
-    _setError(e.toString());
-    _setLoading(false);
-    return false;
+      await loadPendingRequests();
+
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error rejecting request: $e');
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
   }
-}
 
   Future<bool> returnBook(String recordId) async {
     try {
       // Get the borrow record
       final record = _userBorrowings.firstWhere((r) => r.id == recordId);
-      
+
       // Create returned record
       final returnedRecord = BorrowRecord(
         id: record.id,
@@ -269,7 +269,7 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
       );
 
       await _databaseHelper.updateBorrowRecord(returnedRecord);
-      
+
       // Update book availability
       final book = await _databaseHelper.getBookById(record.bookId);
       if (book != null) {
@@ -293,7 +293,7 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
     try {
       // Find the penalty
       final penalty = _penalties.firstWhere((p) => p.id == penaltyId);
-      
+
       // Create updated penalty using copyWith
       final updatedPenalty = penalty.copyWith(
         status: 'paid',
@@ -319,23 +319,25 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
       _isLoading = true;
       notifyListeners();
 
-      final records = await _databaseHelper.getBorrowRecordsByStatus('return_requested');
+      final records =
+          await _databaseHelper.getBorrowRecordsByStatus('return_requested');
       _returnRequests = records;
-      
+
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      print('Error loading return requests: $e');
+      debugPrint('Error loading return requests: $e');
       _isLoading = false;
       notifyListeners();
     }
   }
 
   // Request book return (user action)
-  Future<bool> requestBookReturn(String borrowRecordId, {String? returnNotes}) async {
+  Future<bool> requestBookReturn(String borrowRecordId,
+      {String? returnNotes}) async {
     try {
       final record = _userBorrowings.firstWhere((b) => b.id == borrowRecordId);
-      
+
       final updatedRecord = record.copyWith(
         status: 'return_requested',
         returnRequestDate: DateTime.now(),
@@ -344,17 +346,17 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
       );
 
       await _databaseHelper.updateBorrowRecord(updatedRecord);
-      
+
       // Update local lists
       final index = _userBorrowings.indexWhere((b) => b.id == borrowRecordId);
       if (index != -1) {
         _userBorrowings[index] = updatedRecord;
       }
-      
+
       notifyListeners();
       return true;
     } catch (e) {
-      print('Error requesting book return: $e');
+      debugPrint('Error requesting book return: $e');
       return false;
     }
   }
@@ -382,7 +384,8 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
 
       // ✅ Check if it's return_requested OR borrowed (allow both)
       if (record.status != 'return_requested' && record.status != 'borrowed') {
-        throw Exception('This book is not eligible for return approval (status: ${record.status})');
+        throw Exception(
+            'This book is not eligible for return approval (status: ${record.status})');
       }
 
       final book = await _databaseHelper.getBookById(record.bookId);
@@ -391,11 +394,11 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
       }
 
       final now = DateTime.now();
-      
+
       // ✅ FIX: Get actual user ID, use requesting user as fallback
       final supabase = Supabase.instance.client;
       final currentUser = supabase.auth.currentUser;
-      
+
       // Use current user ID if available, otherwise use the requesting user's ID
       final approverUserId = currentUser?.id ?? record.userId;
 
@@ -449,7 +452,7 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
       await loadPendingRequests();
 
       _setLoading(false);
-      
+
       debugPrint('✅ Book return approved successfully!');
       return true;
     } catch (e) {
@@ -462,51 +465,52 @@ Future<bool> rejectBorrowRequest(String requestId, String adminId, {String? reas
 
   // Fix the rejectBookReturn method:
 
-Future<bool> rejectBookReturn(String borrowRecordId, String adminId, String reason) async {
-  try {
-    _setLoading(true);
+  Future<bool> rejectBookReturn(
+      String borrowRecordId, String adminId, String reason) async {
+    try {
+      _setLoading(true);
 
-    final record = _allActiveBorrowings.firstWhere(
-      (r) => r.id == borrowRecordId && r.status == 'return_requested',
-      orElse: () => throw Exception('Return request not found'),
-    );
+      final record = _allActiveBorrowings.firstWhere(
+        (r) => r.id == borrowRecordId && r.status == 'return_requested',
+        orElse: () => throw Exception('Return request not found'),
+      );
 
-    final now = DateTime.now();
-    
-    // ✅ Get actual user ID
-    final supabase = Supabase.instance.client;
-    final currentUser = supabase.auth.currentUser;
-    final approverUserId = currentUser?.id ?? record.userId;
+      final now = DateTime.now();
 
-    final updatedRecord = record.copyWith(
-      status: 'borrowed',
-      returnNotes: reason,
-      returnApprovedBy: approverUserId, // ✅ Use UUID
-      updatedAt: now,
-    );
+      // ✅ Get actual user ID
+      final supabase = Supabase.instance.client;
+      final currentUser = supabase.auth.currentUser;
+      final approverUserId = currentUser?.id ?? record.userId;
 
-    await _databaseHelper.insertBorrowRecord(updatedRecord);
+      final updatedRecord = record.copyWith(
+        status: 'borrowed',
+        returnNotes: reason,
+        returnApprovedBy: approverUserId, // ✅ Use UUID
+        updatedAt: now,
+      );
 
-    await supabase.from('borrow_records').update({
-      'status': 'borrowed',
-      'return_notes': reason,
-      'return_approved_by': approverUserId, // ✅ UUID
-      'updated_at': now.toIso8601String(),
-    }).eq('id', borrowRecordId);
+      await _databaseHelper.insertBorrowRecord(updatedRecord);
 
-    debugPrint('✅ Rejected return in Supabase: $borrowRecordId');
+      await supabase.from('borrow_records').update({
+        'status': 'borrowed',
+        'return_notes': reason,
+        'return_approved_by': approverUserId, // ✅ UUID
+        'updated_at': now.toIso8601String(),
+      }).eq('id', borrowRecordId);
 
-    await loadPendingRequests();
+      debugPrint('✅ Rejected return in Supabase: $borrowRecordId');
 
-    _setLoading(false);
-    return true;
-  } catch (e) {
-    debugPrint('❌ Error rejecting return: $e');
-    _setError(e.toString());
-    _setLoading(false);
-    return false;
+      await loadPendingRequests();
+
+      _setLoading(false);
+      return true;
+    } catch (e) {
+      debugPrint('❌ Error rejecting return: $e');
+      _setError(e.toString());
+      _setLoading(false);
+      return false;
+    }
   }
-}
 
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -524,22 +528,24 @@ Future<bool> rejectBookReturn(String borrowRecordId, String adminId, String reas
   }
 
   Future<void> debugBookAvailability() async {
-    print('=== BOOK AVAILABILITY DEBUG ===');
+    debugPrint('=== BOOK AVAILABILITY DEBUG ===');
     final books = await _databaseHelper.getAllBooks();
     for (final book in books) {
-      print('📚 ${book.title}');
-      print('   Available: ${book.availableCopies}/${book.totalCopies}');
-      print('   Last Updated: ${book.updatedAt}');
-      print('   ---');
+      debugPrint('📚 ${book.title}');
+      debugPrint('   Available: ${book.availableCopies}/${book.totalCopies}');
+      debugPrint('   Last Updated: ${book.updatedAt}');
+      debugPrint('   ---');
     }
-    
+
     // Check active borrowings
     final borrowings = await _databaseHelper.getAllActiveBorrowings();
-    final borrowedBooks = borrowings.where((b) => b.status == 'borrowed').toList();
-    print('📖 Currently Borrowed: ${borrowedBooks.length} books');
-    
+    final borrowedBooks =
+        borrowings.where((b) => b.status == 'borrowed').toList();
+    debugPrint('📖 Currently Borrowed: ${borrowedBooks.length} books');
+
     for (final borrowing in borrowedBooks) {
-      print('   Book ID: ${borrowing.bookId} (Status: ${borrowing.status})');
+      debugPrint(
+          '   Book ID: ${borrowing.bookId} (Status: ${borrowing.status})');
     }
   }
 
@@ -548,10 +554,10 @@ Future<bool> rejectBookReturn(String borrowRecordId, String adminId, String reas
   Future<bool> resetAllBookAvailability() async {
     try {
       _setLoading(true);
-      
+
       await _databaseHelper.resetAllBookAvailability();
-      
-      print('✅ Reset all books to full availability');
+
+      debugPrint('✅ Reset all books to full availability');
       notifyListeners();
       return true;
     } catch (e) {
@@ -565,23 +571,23 @@ Future<bool> rejectBookReturn(String borrowRecordId, String adminId, String reas
   Future<bool> resetAllSystemData() async {
     try {
       _setLoading(true);
-      
+
       // 1. Reset book availability
       await _databaseHelper.resetAllBookAvailability();
-      
+
       // 2. Clear all borrowing records and penalties
       await _databaseHelper.clearBorrowRecordsTable();
-      
+
       // 3. Clear local data
       _userBorrowings.clear();
       _pendingRequests.clear();
       _allActiveBorrowings.clear();
       _returnRequests.clear();
       _penalties.clear();
-      
+
       notifyListeners();
-      
-      print('✅ System data reset successfully');
+
+      debugPrint('✅ System data reset successfully');
       return true;
     } catch (e) {
       _setError('Failed to reset system data: $e');
@@ -594,19 +600,19 @@ Future<bool> rejectBookReturn(String borrowRecordId, String adminId, String reas
   Future<bool> clearAllData() async {
     try {
       _setLoading(true);
-      
+
       await _databaseHelper.clearAllData();
-      
+
       // Clear all local data
       _userBorrowings.clear();
       _pendingRequests.clear();
       _allActiveBorrowings.clear();
       _returnRequests.clear();
       _penalties.clear();
-      
+
       notifyListeners();
-      
-      print('✅ All data cleared successfully');
+
+      debugPrint('✅ All data cleared successfully');
       return true;
     } catch (e) {
       _setError('Failed to clear all data: $e');
@@ -621,56 +627,57 @@ Future<bool> rejectBookReturn(String borrowRecordId, String adminId, String reas
   Future<void> syncFromSupabase() async {
     try {
       debugPrint('🔄 Syncing data from Supabase...');
-      
+
       final supabase = Supabase.instance.client;
-      
+
       // Get all borrow records from Supabase
       final borrowRecordsResponse = await supabase
           .from('borrow_records')
           .select()
           .order('created_at', ascending: false);
-      
-      debugPrint('📥 Found ${borrowRecordsResponse.length} borrow records in Supabase');
-      
+
+      debugPrint(
+          '📥 Found ${borrowRecordsResponse.length} borrow records in Supabase');
+
       // Save to local database
       final databaseHelper = DatabaseHelper();
       for (final recordMap in borrowRecordsResponse) {
         final record = BorrowRecord.fromMap(recordMap);
-        
+
         // Check if record exists locally
         final localRecords = await databaseHelper.getAllBorrowRecords();
         final exists = localRecords.any((r) => r.id == record.id);
-        
+
         if (!exists) {
           await databaseHelper.insertBorrowRecord(record);
           debugPrint('➕ Added record ${record.id} from Supabase');
         }
       }
-      
+
       // Get all penalties from Supabase
       final penaltiesResponse = await supabase
           .from('penalties')
           .select()
           .order('created_at', ascending: false);
-      
+
       debugPrint('📥 Found ${penaltiesResponse.length} penalties in Supabase');
-      
+
       for (final penaltyMap in penaltiesResponse) {
         final penalty = Penalty.fromMap(penaltyMap);
-        
+
         // Check if penalty exists locally
         final localPenalties = await databaseHelper.getAllPenalties();
         final exists = localPenalties.any((p) => p.id == penalty.id);
-        
+
         if (!exists) {
           await databaseHelper.insertPenalty(penalty);
           debugPrint('➕ Added penalty ${penalty.id} from Supabase');
         }
       }
-      
+
       // Reload local data
       await loadPendingRequests();
-      
+
       debugPrint('✅ Supabase sync complete');
     } catch (e) {
       debugPrint('❌ Error syncing from Supabase: $e');

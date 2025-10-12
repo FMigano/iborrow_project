@@ -185,7 +185,8 @@ class _BookManagementScreenState extends State<BookManagementScreen> {
     final authorController = TextEditingController(text: book?.author ?? '');
     final genreController = TextEditingController(text: book?.genre ?? '');
     final isbnController = TextEditingController(text: book?.isbn ?? '');
-    final descriptionController = TextEditingController(text: book?.description ?? '');
+    final descriptionController =
+        TextEditingController(text: book?.description ?? '');
     final totalCopiesController = TextEditingController(
       text: book?.totalCopies.toString() ?? '1',
     );
@@ -301,7 +302,7 @@ class _BookManagementScreenState extends State<BookManagementScreen> {
 
     try {
       final now = DateTime.now();
-      
+
       if (isEditing && bookId != null) {
         // Update existing book
         final updatedBook = Book(
@@ -316,7 +317,7 @@ class _BookManagementScreenState extends State<BookManagementScreen> {
           createdAt: _books.firstWhere((b) => b.id == bookId).createdAt,
           updatedAt: now,
         );
-        
+
         await _databaseHelper.updateBook(updatedBook);
         _showSuccessSnackBar('Book updated successfully');
       } else {
@@ -333,14 +334,14 @@ class _BookManagementScreenState extends State<BookManagementScreen> {
           createdAt: now,
           updatedAt: now,
         );
-        
+
         await _databaseHelper.insertBook(newBook);
         _showSuccessSnackBar('Book added successfully');
       }
-      
+
+      if (!mounted || !context.mounted) return;
       Navigator.pop(context);
       _loadBooks(); // Refresh the list
-      
     } catch (e) {
       _showErrorSnackBar('Error saving book: $e');
     }
@@ -370,6 +371,7 @@ class _BookManagementScreenState extends State<BookManagementScreen> {
   Future<void> _deleteBook(Book book) async {
     try {
       await _databaseHelper.deleteBook(book.id);
+      if (!mounted || !context.mounted) return;
       Navigator.pop(context);
       _loadBooks();
       _showSuccessSnackBar('Book deleted successfully');

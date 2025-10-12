@@ -119,7 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 16, color: Colors.blue),
+                      const Icon(Icons.info_outline,
+                          size: 16, color: Colors.blue),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -165,7 +166,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const AdminDashboardScreen(),
+                                builder: (context) =>
+                                    const AdminDashboardScreen(),
                               ),
                             );
                           } else {
@@ -220,8 +222,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(_showAdminAccess 
-                          ? 'Admin access enabled' 
+                      content: Text(_showAdminAccess
+                          ? 'Admin access enabled'
                           : 'Admin access disabled'),
                       duration: const Duration(seconds: 1),
                     ),
@@ -330,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              
+
               // Admin Access Button (when enabled)
               if (_showAdminAccess) ...[
                 const SizedBox(height: 16),
@@ -347,7 +349,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
-              
+
               const SizedBox(height: 24),
 
               // Sign Up Link
@@ -364,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ],
               ),
-              
+
               // Admin Access Hint
               if (!_showAdminAccess)
                 Padding(

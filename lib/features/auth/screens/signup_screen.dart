@@ -63,7 +63,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully! Please check your email to verify.'),
+          content: Text('Account created successfully! Please check your email to verify in order to use full capabilities.'),
           backgroundColor: Colors.green,
         ),
       );

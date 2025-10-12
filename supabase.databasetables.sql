@@ -38,9 +38,12 @@ CREATE TABLE borrow_records (
   approved_date TIMESTAMPTZ,
   borrow_date TIMESTAMPTZ,
   due_date TIMESTAMPTZ,
+  return_request_date TIMESTAMPTZ, -- ✅ ADDED
   return_date TIMESTAMPTZ,
   approved_by UUID REFERENCES users(id),
+  return_approved_by UUID REFERENCES users(id), -- ✅ ADDED
   notes TEXT,
+  return_notes TEXT, -- ✅ ADDED
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -50,12 +53,14 @@ DROP TABLE IF EXISTS penalties CASCADE;
 CREATE TABLE penalties (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  book_id UUID NOT NULL REFERENCES books(id) ON DELETE CASCADE, -- ✅ ADDED
   borrow_record_id UUID NOT NULL REFERENCES borrow_records(id) ON DELETE CASCADE,
   amount DECIMAL(10,2) NOT NULL,
   reason TEXT NOT NULL,
   status TEXT DEFAULT 'pending',
-  paid_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  paid_date TIMESTAMPTZ, -- ✅ FIXED: Changed from paid_at to paid_date
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW() -- ✅ ADDED
 );
 
 -- Create indexes for better performance
@@ -78,3 +83,4 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_books_updated_at BEFORE UPDATE ON books FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_borrow_records_updated_at BEFORE UPDATE ON borrow_records FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_penalties_updated_at BEFORE UPDATE ON penalties FOR EACH ROW EXECUTE FUNCTION update_updated_at_column(); -- ✅ ADDED

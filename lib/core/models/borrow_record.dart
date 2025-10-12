@@ -1,5 +1,3 @@
-import 'package:uuid/uuid.dart';
-
 class BorrowRecord {
   final String id;
   final String userId;
@@ -17,8 +15,6 @@ class BorrowRecord {
   final String? returnNotes;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  static const _uuid = Uuid();
 
   BorrowRecord({
     required this.id,
@@ -40,9 +36,9 @@ class BorrowRecord {
   });
 
   bool get isOverdue {
-    return dueDate != null && 
-           DateTime.now().isAfter(dueDate!) && 
-           status == 'borrowed';
+    return dueDate != null &&
+        DateTime.now().isAfter(dueDate!) &&
+        status == 'borrowed';
   }
 
   Map<String, dynamic> toMap() {
@@ -72,18 +68,29 @@ class BorrowRecord {
       userId: map['user_id'] ?? '',
       bookId: map['book_id'] ?? '',
       status: map['status'] ?? 'pending',
-      requestDate: DateTime.parse(map['request_date'] ?? DateTime.now().toIso8601String()),
-      approvedDate: map['approved_date'] != null ? DateTime.parse(map['approved_date']) : null,
-      borrowDate: map['borrow_date'] != null ? DateTime.parse(map['borrow_date']) : null,
+      requestDate: DateTime.parse(
+          map['request_date'] ?? DateTime.now().toIso8601String()),
+      approvedDate: map['approved_date'] != null
+          ? DateTime.parse(map['approved_date'])
+          : null,
+      borrowDate: map['borrow_date'] != null
+          ? DateTime.parse(map['borrow_date'])
+          : null,
       dueDate: map['due_date'] != null ? DateTime.parse(map['due_date']) : null,
-      returnRequestDate: map['return_request_date'] != null ? DateTime.parse(map['return_request_date']) : null,
-      returnDate: map['return_date'] != null ? DateTime.parse(map['return_date']) : null,
+      returnRequestDate: map['return_request_date'] != null
+          ? DateTime.parse(map['return_request_date'])
+          : null,
+      returnDate: map['return_date'] != null
+          ? DateTime.parse(map['return_date'])
+          : null,
       approvedBy: map['approved_by'],
       returnApprovedBy: map['return_approved_by'],
       notes: map['notes'],
       returnNotes: map['return_notes'],
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 

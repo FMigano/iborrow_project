@@ -19,9 +19,9 @@ class DatabaseHelper {
 
   Future<Database?> get database async {
     if (kIsWeb) return null;
-    
+
     if (_database != null) return _database;
-    
+
     _database = await _initDatabase();
     return _database;
   }
@@ -30,7 +30,7 @@ class DatabaseHelper {
     // ✅ FIX: Use getDatabasesPath() for persistent storage
     final databasesPath = await getDatabasesPath();
     final path = join(databasesPath, 'iborrow.db');
-    
+
     debugPrint('📁 Database path: $path');
 
     return await openDatabase(
@@ -45,7 +45,7 @@ class DatabaseHelper {
 
   Future<void> _onCreate(Database db, int version) async {
     debugPrint('🔧 Creating database tables...');
-    
+
     // Create tables
     await db.execute('''
       CREATE TABLE users(
@@ -136,10 +136,10 @@ class DatabaseHelper {
       final books = await webStorage.getAllBooks();
       return books.isNotEmpty;
     }
-    
+
     final db = await database;
     if (db == null) return false;
-    
+
     final result = await db.rawQuery('SELECT COUNT(*) as count FROM books');
     final count = Sqflite.firstIntValue(result) ?? 0;
     return count > 0;
@@ -151,11 +151,11 @@ class DatabaseHelper {
       debugPrint('📱 Running on Web - using WebStorage');
       return;
     }
-    
+
     final db = await database;
     if (db != null) {
       debugPrint('✅ Database initialized at: ${db.path}');
-      
+
       // Check if we have data
       final hasData = await databaseHasData();
       debugPrint('📊 Database has data: $hasData');
@@ -199,7 +199,7 @@ class DatabaseHelper {
       if (maps.isNotEmpty) {
         return app_models.User.fromMap(maps.first);
       }
-      
+
       // If not found locally, try Supabase
       final user = await _getUserFromSupabase(id);
       if (user != null) {
@@ -240,13 +240,12 @@ class DatabaseHelper {
           .from('books')
           .select()
           .order('title', ascending: true);
-    
-      final books = (response as List)
-          .map((json) => Book.fromMap(json))
-          .toList();
-    
+
+      final books =
+          (response as List).map((json) => Book.fromMap(json)).toList();
+
       debugPrint('✅ Loaded ${books.length} books from Supabase');
-    
+
       // Cache locally
       if (kIsWeb) {
         for (final book in books) {
@@ -262,11 +261,11 @@ class DatabaseHelper {
           );
         }
       }
-    
+
       return books;
     } catch (e) {
       debugPrint('⚠️ Failed to load from Supabase, using local cache: $e');
-    
+
       // Fallback to local cache if Supabase fails
       if (kIsWeb) {
         return await webStorage.getAllBooks();
@@ -298,7 +297,7 @@ class DatabaseHelper {
       if (maps.isNotEmpty) {
         return Book.fromMap(maps.first);
       }
-      
+
       // Try Supabase
       final book = await _getBookFromSupabase(id);
       if (book != null) {
@@ -311,10 +310,7 @@ class DatabaseHelper {
   Future<void> updateBook(Book book) async {
     // ✅ UPDATE SUPABASE FIRST
     try {
-      await _supabase
-          .from('books')
-          .update(book.toMap())
-          .eq('id', book.id);
+      await _supabase.from('books').update(book.toMap()).eq('id', book.id);
       debugPrint('✅ Updated book in Supabase: ${book.title}');
     } catch (e) {
       debugPrint('❌ Failed to update book in Supabase: $e');
@@ -340,27 +336,31 @@ class DatabaseHelper {
       await webStorage.deleteBook(bookId);
     } else {
       final db = await database;
-      
+
       // Delete related data first (due to foreign keys)
       await db!.delete('penalties', where: 'book_id = ?', whereArgs: [bookId]);
-      await db.delete('borrow_records', where: 'book_id = ?', whereArgs: [bookId]);
-      
+      await db
+          .delete('borrow_records', where: 'book_id = ?', whereArgs: [bookId]);
+
       // Then delete the book
       await db.delete('books', where: 'id = ?', whereArgs: [bookId]);
     }
-    
+
     // Delete from Supabase
     try {
       final supabaseClient = Supabase.instance.client;
       if (supabaseClient.auth.currentUser != null) {
         await supabaseClient.from('penalties').delete().eq('book_id', bookId);
-        await supabaseClient.from('borrow_records').delete().eq('book_id', bookId);
+        await supabaseClient
+            .from('borrow_records')
+            .delete()
+            .eq('book_id', bookId);
         await supabaseClient.from('books').delete().eq('id', bookId);
       }
     } catch (e) {
       debugPrint('Failed to delete book from Supabase: $e');
     }
-    
+
     debugPrint('Book $bookId deleted successfully');
   }
 
@@ -379,12 +379,12 @@ class DatabaseHelper {
     // ✅ SAVE TO SUPABASE FIRST
     try {
       final supabaseData = Map<String, dynamic>.from(record.toMap());
-    
+
       // Remove invalid UUIDs
       if (!isValidUuid(supabaseData['approved_by'])) {
         supabaseData.remove('approved_by');
       }
-    
+
       if (!isValidUuid(supabaseData['return_approved_by'])) {
         supabaseData.remove('return_approved_by');
       }
@@ -416,7 +416,7 @@ class DatabaseHelper {
     } else {
       final db = await database;
       if (db == null) return []; // Return empty list instead of null
-      
+
       final List<Map<String, dynamic>> maps = await db.query(
         'borrow_records',
         where: 'user_id = ?',
@@ -434,7 +434,7 @@ class DatabaseHelper {
     } else {
       final db = await database;
       if (db == null) return []; // Return empty list instead of null
-      
+
       final List<Map<String, dynamic>> maps = await db.query(
         'borrow_records',
         where: 'status = ?',
@@ -544,7 +544,7 @@ class DatabaseHelper {
         whereArgs: [penalty.id],
       );
     }
-    
+
     // Sync to Supabase
     try {
       await _syncPenaltyToSupabase(penalty);
@@ -564,7 +564,8 @@ class DatabaseHelper {
         'users',
         orderBy: 'created_at DESC',
       );
-      return List.generate(maps.length, (i) => app_models.User.fromMap(maps[i]));
+      return List.generate(
+          maps.length, (i) => app_models.User.fromMap(maps[i]));
     }
   }
 
@@ -575,13 +576,12 @@ class DatabaseHelper {
           .from('borrow_records')
           .select()
           .order('created_at', ascending: false);
-    
-      final records = (response as List)
-          .map((json) => BorrowRecord.fromMap(json))
-          .toList();
-    
+
+      final records =
+          (response as List).map((json) => BorrowRecord.fromMap(json)).toList();
+
       debugPrint('✅ Loaded ${records.length} borrow records from Supabase');
-    
+
       // Cache locally
       if (kIsWeb) {
         for (final record in records) {
@@ -597,17 +597,18 @@ class DatabaseHelper {
           );
         }
       }
-    
+
       return records;
     } catch (e) {
       debugPrint('⚠️ Failed to load from Supabase, using local cache: $e');
-    
+
       // Fallback to local cache
       if (kIsWeb) {
         return await webStorage.getAllBorrowRecords();
       } else {
         final db = await database;
-        final List<Map<String, dynamic>> maps = await db!.query('borrow_records');
+        final List<Map<String, dynamic>> maps =
+            await db!.query('borrow_records');
         return List.generate(maps.length, (i) => BorrowRecord.fromMap(maps[i]));
       }
     }
@@ -630,14 +631,16 @@ class DatabaseHelper {
   Future<List<SyncLogData>> getPendingSyncs() async {
     if (kIsWeb) {
       final webSyncLogs = await webStorage.getPendingSyncs();
-      return webSyncLogs.map((webSyncLog) => SyncLogData(
-        id: webSyncLog.id,
-        tableName: webSyncLog.tableName,
-        recordId: webSyncLog.recordId,
-        operation: webSyncLog.operation,
-        synced: webSyncLog.synced,
-        createdAt: webSyncLog.createdAt,
-      )).toList();
+      return webSyncLogs
+          .map((webSyncLog) => SyncLogData(
+                id: webSyncLog.id,
+                tableName: webSyncLog.tableName,
+                recordId: webSyncLog.recordId,
+                operation: webSyncLog.operation,
+                synced: webSyncLog.synced,
+                createdAt: webSyncLog.createdAt,
+              ))
+          .toList();
     } else {
       final db = await database;
       final List<Map<String, dynamic>> maps = await db!.query(
@@ -663,9 +666,10 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> _logSync(String tableName, String recordId, String operation) async {
+  Future<void> _logSync(
+      String tableName, String recordId, String operation) async {
     if (kIsWeb) return;
-    
+
     final db = await database;
     await db!.insert('sync_log', {
       'id': DateTime.now().millisecondsSinceEpoch.toString(),
@@ -681,20 +685,17 @@ class DatabaseHelper {
   Future<void> _syncUserToSupabase(app_models.User user) async {
     try {
       await _supabase.from('users').upsert(user.toSupabaseMap());
-      print('User synced to Supabase successfully');
+      debugPrint('User synced to Supabase successfully');
     } catch (e) {
-      print('Failed to sync user to Supabase: $e');
+      debugPrint('Failed to sync user to Supabase: $e');
       // Don't throw error - just log it
     }
   }
 
   Future<app_models.User?> _getUserFromSupabase(String id) async {
     try {
-      final response = await _supabase
-          .from('users')
-          .select()
-          .eq('id', id)
-          .single();
+      final response =
+          await _supabase.from('users').select().eq('id', id).single();
       return app_models.User.fromSupabaseMap(response);
     } catch (e) {
       debugPrint('Failed to get user from Supabase: $e');
@@ -702,24 +703,10 @@ class DatabaseHelper {
     }
   }
 
-  Future<void> _syncBookToSupabase(Book book) async {
-    try {
-      print('Syncing book to Supabase: ${book.title} with ID: ${book.id}');
-      await _supabase.from('books').upsert(book.toSupabaseMap());
-      print('Supabase sync successful for book: ${book.title}');
-    } catch (e) {
-      print('Failed to sync book to Supabase: $e');
-      // Don't throw error - just log it
-    }
-  }
-
   Future<Book?> _getBookFromSupabase(String id) async {
     try {
-      final response = await _supabase
-          .from('books')
-          .select()
-          .eq('id', id)
-          .single();
+      final response =
+          await _supabase.from('books').select().eq('id', id).single();
       return Book.fromSupabaseMap(response);
     } catch (e) {
       debugPrint('Failed to get book from Supabase: $e');
@@ -727,25 +714,12 @@ class DatabaseHelper {
     }
   }
 
-  Future<List<Book>> _getAllBooksFromSupabase() async {
-    try {
-      final response = await _supabase
-          .from('books')
-          .select()
-          .order('created_at', ascending: false);
-      return (response as List).map((book) => Book.fromSupabaseMap(book)).toList();
-    } catch (e) {
-      debugPrint('Failed to get books from Supabase: $e');
-      return [];
-    }
-  }
-
   Future<void> _syncBorrowRecordToSupabase(BorrowRecord record) async {
     try {
       await _supabase.from('borrow_records').upsert(record.toMap());
-      print('Borrow record synced to Supabase successfully');
+      debugPrint('Borrow record synced to Supabase successfully');
     } catch (e) {
-      print('Failed to sync borrow record to Supabase: $e');
+      debugPrint('Failed to sync borrow record to Supabase: $e');
       // Don't throw error - just log it
     }
   }
@@ -851,7 +825,8 @@ class DatabaseHelper {
   Future<void> deleteBorrowRecord(String id) async {
     final db = await database;
     await db?.delete('borrow_records', where: 'id = ?', whereArgs: [id]);
-    await db?.delete('penalties', where: 'borrow_record_id = ?', whereArgs: [id]);
+    await db
+        ?.delete('penalties', where: 'borrow_record_id = ?', whereArgs: [id]);
   }
 
   Future<void> deletePenalty(String id) async {

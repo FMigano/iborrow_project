@@ -11,10 +11,11 @@ class DatabaseViewerScreen extends StatefulWidget {
   State<DatabaseViewerScreen> createState() => _DatabaseViewerScreenState();
 }
 
-class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with SingleTickerProviderStateMixin {
+class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DatabaseHelper _db = DatabaseHelper();
-  
+
   List<app_models.User> users = []; // Use alias here
   List<Book> books = [];
   List<BorrowRecord> borrowings = [];
@@ -29,25 +30,26 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
 
   Future<void> _loadAllData() async {
     setState(() => isLoading = true);
-    
+
     try {
       final loadedUsers = await _db.getAllUsers();
       final loadedBooks = await _db.getAllBooks();
-      final loadedBorrowings = await _db.getAllBorrowRecords(); // Changed method name
-      
+      final loadedBorrowings =
+          await _db.getAllBorrowRecords(); // Changed method name
+
       setState(() {
         users = loadedUsers;
         books = loadedBooks;
         borrowings = loadedBorrowings;
         isLoading = false;
       });
-      
-      print('=== DATABASE CONTENT ===');
-      print('Users: ${users.length}');
-      print('Books: ${books.length}');
-      print('Borrowings: ${borrowings.length}');
+
+      debugPrint('=== DATABASE CONTENT ===');
+      debugPrint('Users: ${users.length}');
+      debugPrint('Books: ${books.length}');
+      debugPrint('Borrowings: ${borrowings.length}');
     } catch (e) {
-      print('Error loading data: $e');
+      debugPrint('Error loading data: $e');
       setState(() => isLoading = false);
     }
   }
@@ -74,23 +76,24 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
           ],
         ),
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : TabBarView(
-            controller: _tabController,
-            children: [
-              _buildUsersTab(),
-              _buildBooksTab(),
-              _buildBorrowingsTab(),
-            ],
-          ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildUsersTab(),
+                _buildBooksTab(),
+                _buildBorrowingsTab(),
+              ],
+            ),
     );
   }
 
   Widget _buildUsersTab() {
     if (users.isEmpty) {
       return const Center(
-        child: Text('NO USERS FOUND', style: TextStyle(fontSize: 20, color: Colors.red)),
+        child: Text('NO USERS FOUND',
+            style: TextStyle(fontSize: 20, color: Colors.red)),
       );
     }
 
@@ -101,7 +104,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
         return Card(
           margin: const EdgeInsets.all(8),
           child: ListTile(
-            title: Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(user.fullName,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -120,7 +124,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
   Widget _buildBooksTab() {
     if (books.isEmpty) {
       return const Center(
-        child: Text('NO BOOKS FOUND', style: TextStyle(fontSize: 20, color: Colors.red)),
+        child: Text('NO BOOKS FOUND',
+            style: TextStyle(fontSize: 20, color: Colors.red)),
       );
     }
 
@@ -131,7 +136,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
         return Card(
           margin: const EdgeInsets.all(8),
           child: ListTile(
-            title: Text(book.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            title: Text(book.title,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -150,7 +156,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
   Widget _buildBorrowingsTab() {
     if (borrowings.isEmpty) {
       return const Center(
-        child: Text('NO BORROWINGS FOUND', style: TextStyle(fontSize: 20, color: Colors.red)),
+        child: Text('NO BORROWINGS FOUND',
+            style: TextStyle(fontSize: 20, color: Colors.red)),
       );
     }
 
@@ -161,11 +168,15 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
         return Card(
           margin: const EdgeInsets.all(8),
           child: ListTile(
-            title: Text('STATUS: ${borrowing.status.toUpperCase()}', 
+            title: Text(
+              'STATUS: ${borrowing.status.toUpperCase()}',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: borrowing.status == 'pending' ? Colors.orange : 
-                       borrowing.status == 'borrowed' ? Colors.green : Colors.blue,
+                color: borrowing.status == 'pending'
+                    ? Colors.orange
+                    : borrowing.status == 'borrowed'
+                        ? Colors.green
+                        : Colors.blue,
               ),
             ),
             subtitle: Column(
@@ -174,7 +185,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen> with Single
                 Text('User ID: ${borrowing.userId}'),
                 Text('Book ID: ${borrowing.bookId}'),
                 Text('Request Date: ${borrowing.requestDate}'),
-                if (borrowing.dueDate != null) Text('Due Date: ${borrowing.dueDate}'),
+                if (borrowing.dueDate != null)
+                  Text('Due Date: ${borrowing.dueDate}'),
                 if (borrowing.notes != null) Text('Notes: ${borrowing.notes}'),
                 Text('Record ID: ${borrowing.id}'),
               ],

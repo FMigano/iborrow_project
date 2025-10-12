@@ -32,9 +32,12 @@ class Penalty {
       amount: (map['amount'] ?? 0.0).toDouble(),
       reason: map['reason'] ?? '',
       status: map['status'] ?? '',
-      paidDate: map['paid_date'] != null ? DateTime.parse(map['paid_date']) : null,
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+      paidDate:
+          map['paid_date'] != null ? DateTime.parse(map['paid_date']) : null,
+      createdAt:
+          DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -62,7 +65,8 @@ class Penalty {
       'amount': amount,
       'reason': reason,
       'status': status,
-      'paid_at': paidDate?.toIso8601String(),
+      'paid_date':
+          paidDate?.toIso8601String(), // ✅ FIXED: Use paid_date not paid_at
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -77,7 +81,9 @@ class Penalty {
       amount: map['amount'].toDouble(),
       reason: map['reason'],
       status: map['status'],
-      paidDate: map['paid_date'] != null ? DateTime.parse(map['paid_date']) : null,
+      paidDate: map['paid_date'] != null
+          ? DateTime.parse(map['paid_date'])
+          : null, // ✅ FIXED: Use paid_date
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
     );

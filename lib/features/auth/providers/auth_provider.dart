@@ -50,12 +50,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _createUserInDatabase(supabase.User supabaseUser) async {
+    // ✅ FIX: Read phone_number from userMetadata, not from supabaseUser.phone
     final user = User(
       id: supabaseUser.id,
       email: supabaseUser.email ?? '',
       fullName: supabaseUser.userMetadata?['full_name'] ?? '',
       studentId: supabaseUser.userMetadata?['student_id'],
-      phoneNumber: supabaseUser.phone,
+      phoneNumber: supabaseUser
+          .userMetadata?['phone_number'], // ✅ FIXED: Read from metadata
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );

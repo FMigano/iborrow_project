@@ -1,5 +1,3 @@
-import 'package:uuid/uuid.dart';
-
 class Book {
   final String id;
   final String title;
@@ -12,8 +10,6 @@ class Book {
   final int availableCopies;
   final DateTime createdAt;
   final DateTime updatedAt;
-
-  static const _uuid = Uuid();
 
   Book({
     required this.id,
@@ -70,8 +66,10 @@ class Book {
       imageUrl: map['image_url'],
       totalCopies: map['total_copies'] ?? 0,
       availableCopies: map['available_copies'] ?? 0,
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 
@@ -102,8 +100,10 @@ class Book {
       imageUrl: map['image_url'],
       totalCopies: map['total_copies'] ?? 0,
       availableCopies: map['available_copies'] ?? 0,
-      createdAt: DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
+      createdAt:
+          DateTime.parse(map['created_at'] ?? DateTime.now().toIso8601String()),
+      updatedAt:
+          DateTime.parse(map['updated_at'] ?? DateTime.now().toIso8601String()),
     );
   }
 

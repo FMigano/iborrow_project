@@ -22,7 +22,7 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // ✅ Reload data when screen opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshData();
@@ -31,10 +31,12 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
 
   Future<void> _refreshData() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+    final borrowingProvider =
+        Provider.of<BorrowingProvider>(context, listen: false);
 
     if (authProvider.currentUser != null) {
-      debugPrint('🔄 Refreshing borrowings for user: ${authProvider.currentUser!.id}');
+      debugPrint(
+          '🔄 Refreshing borrowings for user: ${authProvider.currentUser!.id}');
       await borrowingProvider.loadUserBorrowings(authProvider.currentUser!.id);
     }
   }
@@ -58,9 +60,8 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
         .where((b) => b.userId == authProvider.currentUser!.id)
         .toList();
 
-    final currentBorrowings = userBorrowings
-        .where((b) => b.status == 'borrowed')
-        .toList();
+    final currentBorrowings =
+        userBorrowings.where((b) => b.status == 'borrowed').toList();
 
     final historyBorrowings = userBorrowings
         .where((b) => b.status == 'returned' || b.status == 'rejected')
@@ -72,7 +73,8 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('My Borrowings', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+        title: Text('My Borrowings',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         bottom: TabBar(
           controller: _tabController,
           tabs: [
@@ -163,13 +165,13 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
   }
 
   Widget _buildBorrowingCard(BuildContext context, BorrowRecord record) {
-    final isOverdue = record.dueDate != null && 
-        DateTime.now().isAfter(record.dueDate!) && 
+    final isOverdue = record.dueDate != null &&
+        DateTime.now().isAfter(record.dueDate!) &&
         record.status == 'borrowed';
 
     Color statusColor;
     String statusText;
-    
+
     switch (record.status) {
       case 'pending':
         statusColor = Colors.orange;
@@ -211,9 +213,10 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                     children: [
                       Text(
                         'Book ID: ${record.bookId}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -224,29 +227,34 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                         const SizedBox(height: 4),
                         Text(
                           'Due Date: ${DateFormat('MMM dd, yyyy').format(record.dueDate!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: isOverdue ? Colors.red : null,
-                            fontWeight: isOverdue ? FontWeight.bold : null,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                color: isOverdue ? Colors.red : null,
+                                fontWeight: isOverdue ? FontWeight.bold : null,
+                              ),
                         ),
                       ],
                       if (record.returnRequestDate != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           'Return Requested: ${DateFormat('MMM dd, yyyy').format(record.returnRequestDate!)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ],
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: statusColor),
                   ),
@@ -261,17 +269,17 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                 ),
               ],
             ),
-            
+
             if (record.notes != null) ...[
               const SizedBox(height: 8),
               Text(
                 'Notes: ${record.notes}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontStyle: FontStyle.italic,
-                ),
+                      fontStyle: FontStyle.italic,
+                    ),
               ),
             ],
-            
+
             // Add Return Request Button
             if (record.status == 'borrowed') ...[
               const SizedBox(height: 12),
@@ -332,12 +340,17 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
     );
 
     if (notes != null && context.mounted) {
-      final success = await Provider.of<BorrowingProvider>(context, listen: false).requestBookReturn(recordId, returnNotes: notes.isNotEmpty ? notes : null);
-      
+      final success =
+          await Provider.of<BorrowingProvider>(context, listen: false)
+              .requestBookReturn(recordId,
+                  returnNotes: notes.isNotEmpty ? notes : null);
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success ? 'Return request submitted successfully!' : 'Failed to submit return request'),
+            content: Text(success
+                ? 'Return request submitted successfully!'
+                : 'Failed to submit return request'),
             backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
@@ -347,7 +360,7 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
 
   Widget _buildHistoryCard(BuildContext context, BorrowRecord record) {
     final isReturned = record.status == 'returned';
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -363,9 +376,10 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                     children: [
                       Text(
                         'Book ID: ${record.bookId}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -382,11 +396,15 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isReturned ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                    color: isReturned
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isReturned ? Colors.green : Colors.red),
+                    border: Border.all(
+                        color: isReturned ? Colors.green : Colors.red),
                   ),
                   child: Text(
                     isReturned ? 'Returned' : 'Rejected',
@@ -399,8 +417,7 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                 ),
               ],
             ),
-            
-            if (record.isOverdue == true) ...[
+            if (record.isOverdue) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
@@ -415,9 +432,9 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                     Text(
                       'Returned late',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -431,7 +448,7 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
 
   Widget _buildPenaltyCard(BuildContext context, Penalty penalty) {
     final isPaid = penalty.status == 'paid';
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -448,21 +465,21 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                       Text(
                         '\$${penalty.amount.toStringAsFixed(2)}',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: isPaid ? Colors.green : Colors.red,
-                        ),
+                              fontWeight: FontWeight.bold,
+                              color: isPaid ? Colors.green : Colors.red,
+                            ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        penalty.reason ?? 'Late return penalty',
+                        penalty.reason,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Created: ${DateFormat('MMM dd, yyyy').format(penalty.createdAt)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
+                              color: Colors.grey[600],
+                            ),
                       ),
                       if (penalty.paidDate != null) ...[
                         Text(
@@ -485,11 +502,15 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isPaid ? Colors.green.withValues(alpha: 0.1) : Colors.red.withValues(alpha: 0.1),
+                    color: isPaid
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.red.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: isPaid ? Colors.green : Colors.red),
+                    border:
+                        Border.all(color: isPaid ? Colors.green : Colors.red),
                   ),
                   child: Text(
                     isPaid ? 'Paid' : 'Pending',
@@ -502,14 +523,16 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
                 ),
               ],
             ),
-            
             if (!isPaid) ...[
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () async {
-                    final success = await Provider.of<BorrowingProvider>(context, listen: false).payPenalty(penalty.id);
+                    final success = await Provider.of<BorrowingProvider>(
+                            context,
+                            listen: false)
+                        .payPenalty(penalty.id);
                     if (success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -550,15 +573,15 @@ Widget _buildEmptyState({
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Colors.grey[600],
-            ),
+                  color: Colors.grey[600],
+                ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
+                  color: Colors.grey[500],
+                ),
           ),
         ],
       ),

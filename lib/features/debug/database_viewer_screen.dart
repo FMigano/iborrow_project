@@ -20,12 +20,12 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DatabaseHelper _databaseHelper = DatabaseHelper();
-  
+
   List<Book> _books = [];
   List<app_models.User> _users = [];
   List<BorrowRecord> _borrowRecords = [];
   List<Penalty> _penalties = [];
-  
+
   bool _isLoading = false;
 
   @override
@@ -37,13 +37,13 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
 
   Future<void> _loadAllData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final books = await _databaseHelper.getAllBooks();
       final users = await _databaseHelper.getAllUsers();
       final borrowRecords = await _databaseHelper.getAllBorrowRecords();
       final penalties = await _databaseHelper.getAllPenalties();
-      
+
       setState(() {
         _books = books;
         _users = users;
@@ -167,12 +167,14 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
         // Action buttons
         Container(
           padding: const EdgeInsets.all(16),
-          child: Column(  // Change from Row to Column to prevent overflow
+          child: Column(
+            // Change from Row to Column to prevent overflow
             children: [
               // First row with wrapped buttons
               Row(
                 children: [
-                  Expanded(  // Wrap buttons in Expanded to prevent overflow
+                  Expanded(
+                    // Wrap buttons in Expanded to prevent overflow
                     child: ElevatedButton.icon(
                       onPressed: _showDeleteByGenreDialog,
                       icon: const Icon(Icons.category, size: 18),
@@ -188,7 +190,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(  // Wrap buttons in Expanded to prevent overflow
+                  Expanded(
+                    // Wrap buttons in Expanded to prevent overflow
                     child: ElevatedButton.icon(
                       onPressed: _showDeleteByAuthorDialog,
                       icon: const Icon(Icons.person, size: 18),
@@ -231,7 +234,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
             ],
           ),
         ),
-        
+
         // Books list
         Expanded(
           child: ListView.builder(
@@ -268,14 +271,16 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: book.isAvailable ? Colors.green : Colors.red,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             '${book.availableCopies}/${book.totalCopies}',
-                            style: const TextStyle(color: Colors.white, fontSize: 12),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 12),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -296,10 +301,14 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                             _buildDataRow('ID', book.id),
                             _buildDataRow('ISBN', book.isbn),
                             _buildDataRow('Description', book.description),
-                            _buildDataRow('Total Copies', '${book.totalCopies}'),
-                            _buildDataRow('Available Copies', '${book.availableCopies}'),
-                            _buildDataRow('Created At', _formatDate(book.createdAt)),
-                            _buildDataRow('Updated At', _formatDate(book.updatedAt)),
+                            _buildDataRow(
+                                'Total Copies', '${book.totalCopies}'),
+                            _buildDataRow(
+                                'Available Copies', '${book.availableCopies}'),
+                            _buildDataRow(
+                                'Created At', _formatDate(book.createdAt)),
+                            _buildDataRow(
+                                'Updated At', _formatDate(book.updatedAt)),
                           ],
                         ),
                       ),
@@ -357,12 +366,14 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                 user.fullName,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text('${user.email} • ${user.isAdmin ? 'Admin' : 'User'}'),
+              subtitle:
+                  Text('${user.email} • ${user.isAdmin ? 'Admin' : 'User'}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: user.isAdmin ? Colors.purple : Colors.blue,
                       borderRadius: BorderRadius.circular(12),
@@ -390,7 +401,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                       _buildDataRow('ID', user.id),
                       _buildDataRow('Student ID', user.studentId),
                       _buildDataRow('Phone', user.phoneNumber),
-                      _buildDataRow('Role', user.isAdmin ? 'Administrator' : 'Regular User'),
+                      _buildDataRow('Role',
+                          user.isAdmin ? 'Administrator' : 'Regular User'),
                       _buildDataRow('Created At', _formatDate(user.createdAt)),
                       _buildDataRow('Updated At', _formatDate(user.updatedAt)),
                     ],
@@ -412,7 +424,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
           children: [
             Icon(Icons.assignment, size: 64, color: Colors.grey),
             SizedBox(height: 16),
-            Text('No borrow records in database', style: TextStyle(fontSize: 18)),
+            Text('No borrow records in database',
+                style: TextStyle(fontSize: 18)),
           ],
         ),
       );
@@ -447,12 +460,14 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                 'Record ${record.id.substring(0, 8)}...',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text('${record.status.toUpperCase()} • User: ${record.userId.substring(0, 8)}...'),
+              subtitle: Text(
+                  '${record.status.toUpperCase()} • User: ${record.userId.substring(0, 8)}...'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: _getStatusColor(record.status),
                       borderRadius: BorderRadius.circular(12),
@@ -481,11 +496,28 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                       _buildDataRow('User ID', record.userId),
                       _buildDataRow('Book ID', record.bookId),
                       _buildDataRow('Status', record.status),
-                      _buildDataRow('Request Date', _formatDate(record.requestDate)),
-                      _buildDataRow('Approved Date', record.approvedDate != null ? _formatDate(record.approvedDate!) : 'N/A'),
-                      _buildDataRow('Borrow Date', record.borrowDate != null ? _formatDate(record.borrowDate!) : 'N/A'),
-                      _buildDataRow('Due Date', record.dueDate != null ? _formatDate(record.dueDate!) : 'N/A'),
-                      _buildDataRow('Return Date', record.returnDate != null ? _formatDate(record.returnDate!) : 'N/A'),
+                      _buildDataRow(
+                          'Request Date', _formatDate(record.requestDate)),
+                      _buildDataRow(
+                          'Approved Date',
+                          record.approvedDate != null
+                              ? _formatDate(record.approvedDate!)
+                              : 'N/A'),
+                      _buildDataRow(
+                          'Borrow Date',
+                          record.borrowDate != null
+                              ? _formatDate(record.borrowDate!)
+                              : 'N/A'),
+                      _buildDataRow(
+                          'Due Date',
+                          record.dueDate != null
+                              ? _formatDate(record.dueDate!)
+                              : 'N/A'),
+                      _buildDataRow(
+                          'Return Date',
+                          record.returnDate != null
+                              ? _formatDate(record.returnDate!)
+                              : 'N/A'),
                       _buildDataRow('Approved By', record.approvedBy ?? 'N/A'),
                       _buildDataRow('Notes', record.notes ?? 'N/A'),
                     ],
@@ -542,14 +574,17 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                 'Penalty \$${penalty.amount.toStringAsFixed(2)}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              subtitle: Text('${penalty.status.toUpperCase()} • ${penalty.reason}'),
+              subtitle:
+                  Text('${penalty.status.toUpperCase()} • ${penalty.reason}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: penalty.status == 'paid' ? Colors.green : Colors.red,
+                      color:
+                          penalty.status == 'paid' ? Colors.green : Colors.red,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -575,12 +610,19 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                       _buildDataRow('ID', penalty.id),
                       _buildDataRow('User ID', penalty.userId),
                       _buildDataRow('Borrow Record ID', penalty.borrowRecordId),
-                      _buildDataRow('Amount', '\$${penalty.amount.toStringAsFixed(2)}'),
+                      _buildDataRow(
+                          'Amount', '\$${penalty.amount.toStringAsFixed(2)}'),
                       _buildDataRow('Reason', penalty.reason),
                       _buildDataRow('Status', penalty.status),
-                      _buildDataRow('Paid Date', penalty.paidDate != null ? _formatDate(penalty.paidDate!) : 'N/A'),
-                      _buildDataRow('Created At', _formatDate(penalty.createdAt)),
-                      _buildDataRow('Updated At', _formatDate(penalty.updatedAt)),
+                      _buildDataRow(
+                          'Paid Date',
+                          penalty.paidDate != null
+                              ? _formatDate(penalty.paidDate!)
+                              : 'N/A'),
+                      _buildDataRow(
+                          'Created At', _formatDate(penalty.createdAt)),
+                      _buildDataRow(
+                          'Updated At', _formatDate(penalty.updatedAt)),
                     ],
                   ),
                 ),
@@ -643,86 +685,93 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
   // Delete confirmation dialogs
   Future<bool> _confirmDeleteBook(Book book) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Book'),
-        content: Text('Are you sure you want to delete "${book.title}"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Book'),
+            content: Text('Are you sure you want to delete "${book.title}"?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   Future<bool> _confirmDeleteUser(app_models.User user) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete User'),
-        content: Text('Are you sure you want to delete "${user.fullName}"?\n\nThis will also delete all their borrow records and penalties.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete User'),
+            content: Text(
+                'Are you sure you want to delete "${user.fullName}"?\n\nThis will also delete all their borrow records and penalties.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   Future<bool> _confirmDeleteBorrowRecord(BorrowRecord record) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Borrow Record'),
-        content: Text('Are you sure you want to delete this borrow record?\n\nID: ${record.id.substring(0, 8)}...'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Borrow Record'),
+            content: Text(
+                'Are you sure you want to delete this borrow record?\n\nID: ${record.id.substring(0, 8)}...'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   Future<bool> _confirmDeletePenalty(Penalty penalty) async {
     return await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Penalty'),
-        content: Text('Are you sure you want to delete this penalty?\n\nAmount: \$${penalty.amount.toStringAsFixed(2)}'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete Penalty'),
+            content: Text(
+                'Are you sure you want to delete this penalty?\n\nAmount: \$${penalty.amount.toStringAsFixed(2)}'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   // Individual delete confirmations
@@ -829,7 +878,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Data'),
-        content: const Text('Are you sure you want to delete ALL data from the database? This action cannot be undone.'),
+        content: const Text(
+            'Are you sure you want to delete ALL data from the database? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -838,7 +888,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               // Show loading indicator
               showDialog(
                 context: context,
@@ -853,13 +903,15 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                   ),
                 ),
               );
-              
+
               try {
                 await _databaseHelper.clearAllData();
+                if (!mounted || !context.mounted) return;
                 Navigator.pop(context); // Close loading dialog
                 await _loadAllData(); // Reload data
                 _showSuccessSnackBar('All data cleared successfully');
               } catch (e) {
+                if (!mounted || !context.mounted) return;
                 Navigator.pop(context); // Close loading dialog
                 _showErrorSnackBar('Error clearing data: $e');
               }
@@ -877,7 +929,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Books'),
-        content: const Text('Are you sure you want to delete ALL books from the database?'),
+        content: const Text(
+            'Are you sure you want to delete ALL books from the database?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -903,7 +956,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Users'),
-        content: const Text('Are you sure you want to delete ALL users? This will also delete all borrowing records and penalties.'),
+        content: const Text(
+            'Are you sure you want to delete ALL users? This will also delete all borrowing records and penalties.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -929,7 +983,8 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Clear All Borrowings'),
-        content: const Text('This will:\n• Delete all borrow records\n• Delete all penalties\n• Reset all books to full availability\n\nUsers and books will be kept.'),
+        content: const Text(
+            'This will:\n• Delete all borrow records\n• Delete all penalties\n• Reset all books to full availability\n\nUsers and books will be kept.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -938,7 +993,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              
+
               // Show loading indicator
               showDialog(
                 context: context,
@@ -953,17 +1008,20 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                   ),
                 ),
               );
-              
+
               try {
                 // Reset book availability first
                 await _databaseHelper.resetAllBookAvailability();
                 // Then clear borrowing data
                 await _databaseHelper.clearBorrowRecordsTable();
-                
+
+                if (!mounted || !context.mounted) return;
                 Navigator.pop(context); // Close loading dialog
                 await _loadAllData(); // Reload data
-                _showSuccessSnackBar('All borrowing data cleared and books reset to full availability');
+                _showSuccessSnackBar(
+                    'All borrowing data cleared and books reset to full availability');
               } catch (e) {
+                if (!mounted || !context.mounted) return;
                 Navigator.pop(context); // Close loading dialog
                 _showErrorSnackBar('Error clearing borrowing data: $e');
               }
@@ -979,7 +1037,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
   void _showDeleteByGenreDialog() {
     final controller = TextEditingController();
     final availableGenres = _books.map((b) => b.genre).toSet().toList();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -992,7 +1050,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                 labelText: 'Select Genre',
                 border: OutlineInputBorder(),
               ),
-              initialValue: availableGenres.isNotEmpty ? availableGenres.first : null,
+              value: availableGenres.isNotEmpty ? availableGenres.first : null,
               onChanged: (value) => controller.text = value ?? '',
               items: availableGenres.map((genre) {
                 final count = _books.where((b) => b.genre == genre).length;
@@ -1011,10 +1069,11 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
           ),
           TextButton(
             onPressed: () async {
-              final selectedGenre = availableGenres.isNotEmpty ? availableGenres.first : null;
+              final selectedGenre =
+                  availableGenres.isNotEmpty ? availableGenres.first : null;
               if (selectedGenre != null) {
                 Navigator.pop(context);
-                
+
                 try {
                   showDialog(
                     context: context,
@@ -1031,11 +1090,14 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                   );
 
                   await _databaseHelper.deleteBooksByGenre(selectedGenre);
-                  
+
+                  if (!mounted || !context.mounted) return;
                   Navigator.pop(context); // Close loading dialog
                   _loadAllData();
-                  _showSuccessSnackBar('Books in "$selectedGenre" genre deleted');
+                  _showSuccessSnackBar(
+                      'Books in "$selectedGenre" genre deleted');
                 } catch (e) {
+                  if (!mounted || !context.mounted) return;
                   Navigator.pop(context); // Close loading dialog
                   _showErrorSnackBar('Error deleting books by genre: $e');
                 }
@@ -1051,8 +1113,9 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
 
   void _showDeleteByAuthorDialog() {
     final availableAuthors = _books.map((b) => b.author).toSet().toList();
-    String? selectedAuthor = availableAuthors.isNotEmpty ? availableAuthors.first : null;
-    
+    String? selectedAuthor =
+        availableAuthors.isNotEmpty ? availableAuthors.first : null;
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1066,7 +1129,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                   labelText: 'Select Author',
                   border: OutlineInputBorder(),
                 ),
-                initialValue: selectedAuthor,
+                value: selectedAuthor,
                 onChanged: (value) => setState(() => selectedAuthor = value),
                 items: availableAuthors.map((author) {
                   final count = _books.where((b) => b.author == author).length;
@@ -1087,7 +1150,7 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
               onPressed: () async {
                 if (selectedAuthor != null) {
                   Navigator.pop(context);
-                  
+
                   try {
                     showDialog(
                       context: context,
@@ -1104,11 +1167,13 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                     );
 
                     await _databaseHelper.deleteBooksByAuthor(selectedAuthor!);
-                    
+
+                    if (!mounted || !context.mounted) return;
                     Navigator.pop(context); // Close loading dialog
                     _loadAllData();
                     _showSuccessSnackBar('Books by "$selectedAuthor" deleted');
                   } catch (e) {
+                    if (!mounted || !context.mounted) return;
                     Navigator.pop(context); // Close loading dialog
                     _showErrorSnackBar('Error deleting books by author: $e');
                   }

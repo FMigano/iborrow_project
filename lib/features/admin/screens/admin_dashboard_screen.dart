@@ -25,17 +25,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this); // Increase to 5 tabs
-    
+    _tabController =
+        TabController(length: 5, vsync: this); // Increase to 5 tabs
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadData();
     });
   }
 
   Future<void> _loadData() async {
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+    final borrowingProvider =
+        Provider.of<BorrowingProvider>(context, listen: false);
     final booksProvider = Provider.of<BooksProvider>(context, listen: false);
-    
+
     await Future.wait([
       borrowingProvider.loadPendingRequests(),
       borrowingProvider.loadReturnRequests(), // This should now work
@@ -67,7 +69,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
             fontWeight: FontWeight.normal,
           ),
           labelPadding: EdgeInsets.zero, // Removes extra padding
-          indicatorPadding: const EdgeInsets.symmetric(horizontal: 4), // Better indicator spacing
+          indicatorPadding: const EdgeInsets.symmetric(
+              horizontal: 4), // Better indicator spacing
           tabs: const [
             Tab(
               icon: Icon(Icons.dashboard, size: 16),
@@ -120,7 +123,8 @@ class _OverviewTab extends StatelessWidget {
             Consumer2<BorrowingProvider, BooksProvider>(
               builder: (context, borrowing, books, child) {
                 final totalBooks = books.books.length;
-                final availableBooks = books.books.where((b) => b.availableCopies > 0).length;
+                final availableBooks =
+                    books.books.where((b) => b.availableCopies > 0).length;
                 final pendingRequests = borrowing.pendingRequests.length;
                 final activeBorrowings = borrowing.allActiveBorrowings.length;
 
@@ -189,7 +193,7 @@ class _OverviewTab extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            
+
             // Reset & Reload Button
             Card(
               child: ListTile(
@@ -206,9 +210,9 @@ class _OverviewTab extends StatelessWidget {
                 onTap: () => _showResetDialog(context),
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Database Viewer Button
             Card(
               child: ListTile(
@@ -265,7 +269,8 @@ class _OverviewTab extends StatelessWidget {
             Text('• Delete all borrow records', style: GoogleFonts.inter()),
             Text('• Delete all penalties', style: GoogleFonts.inter()),
             Text('• Reset book availability', style: GoogleFonts.inter()),
-            Text('• Reload sample books from Supabase', style: GoogleFonts.inter()),
+            Text('• Reload sample books from Supabase',
+                style: GoogleFonts.inter()),
             const SizedBox(height: 16),
             Text(
               'Continue?',
@@ -307,15 +312,17 @@ class _OverviewTab extends StatelessWidget {
         // Clear all data
         final sampleDataService = SampleDataService();
         await sampleDataService.clearAllData();
-        
+
         // Insert fresh sample data
         await sampleDataService.insertSampleData();
 
         // Reload data in providers
         if (context.mounted) {
-          final booksProvider = Provider.of<BooksProvider>(context, listen: false);
-          final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
-          
+          final booksProvider =
+              Provider.of<BooksProvider>(context, listen: false);
+          final borrowingProvider =
+              Provider.of<BorrowingProvider>(context, listen: false);
+
           await Future.wait([
             booksProvider.loadBooks(),
             borrowingProvider.loadPendingRequests(),
@@ -325,7 +332,7 @@ class _OverviewTab extends StatelessWidget {
         // Close loading dialog
         if (context.mounted) {
           Navigator.pop(context);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('✅ Data reset and reloaded successfully!'),
@@ -335,11 +342,11 @@ class _OverviewTab extends StatelessWidget {
         }
       } catch (e) {
         debugPrint('❌ Error resetting data: $e');
-        
+
         // Close loading dialog
         if (context.mounted) {
           Navigator.pop(context);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('❌ Error: $e'),
@@ -352,16 +359,17 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Future<void> _loadData(BuildContext context) async {
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+    final borrowingProvider =
+        Provider.of<BorrowingProvider>(context, listen: false);
     final booksProvider = Provider.of<BooksProvider>(context, listen: false);
-    
+
     await Future.wait([
       borrowingProvider.loadPendingRequests(),
       booksProvider.loadBooks(),
     ]);
   }
 
-  Widget _buildStatCard(BuildContext context, String title, String value, 
+  Widget _buildStatCard(BuildContext context, String title, String value,
       IconData icon, Color color) {
     return Card(
       child: Padding(
@@ -441,7 +449,8 @@ class _RequestsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRequestCard(BuildContext context, BorrowRecord request, BorrowingProvider borrowing) {
+  Widget _buildRequestCard(
+      BuildContext context, BorrowRecord request, BorrowingProvider borrowing) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -461,9 +470,10 @@ class _RequestsTab extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.1),
+                    color: Colors.orange.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(color: Colors.orange),
                   ),
@@ -503,7 +513,8 @@ class _RequestsTab extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => _rejectRequest(context, request.id, borrowing),
+                    onPressed: () =>
+                        _rejectRequest(context, request.id, borrowing),
                     icon: const Icon(Icons.close, size: 18),
                     label: const Text('Reject'),
                     style: OutlinedButton.styleFrom(
@@ -534,8 +545,10 @@ class _RequestsTab extends StatelessWidget {
   }
 
   // ✅ COMPLETELY REWRITE: Remove auth check
-  Future<void> _approveRequest(BuildContext context, BorrowRecord request) async {
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+  Future<void> _approveRequest(
+      BuildContext context, BorrowRecord request) async {
+    final borrowingProvider =
+        Provider.of<BorrowingProvider>(context, listen: false);
 
     final success = await borrowingProvider.approveBorrowRequest(
       request.id,
@@ -545,22 +558,23 @@ class _RequestsTab extends StatelessWidget {
     if (success && context.mounted) {
       // ✅ Show quick success animation
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Row(
             children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              const Text('Request approved!'),
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 12),
+              Text('Request approved!'),
             ],
           ),
           backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
+          duration: Duration(seconds: 2),
         ),
       );
     }
   }
 
-  Future<void> _rejectRequest(BuildContext context, String requestId, BorrowingProvider borrowing) async {
+  Future<void> _rejectRequest(BuildContext context, String requestId,
+      BorrowingProvider borrowing) async {
     final reason = await showDialog<String>(
       context: context,
       builder: (context) {
@@ -672,7 +686,8 @@ class _ReturnRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borrowingProvider = Provider.of<BorrowingProvider>(context, listen: false);
+    final borrowingProvider =
+        Provider.of<BorrowingProvider>(context, listen: false);
 
     return FutureBuilder<Map<String, dynamic>>(
       future: _loadRequestData(),
@@ -696,8 +711,8 @@ class _ReturnRequestCard extends StatelessWidget {
         final data = snapshot.data!;
         final book = data['book'] as Book?;
         final user = data['user'] as app_models.User?;
-        final isOverdue = request.dueDate != null && 
-                         DateTime.now().isAfter(request.dueDate!);
+        final isOverdue =
+            request.dueDate != null && DateTime.now().isAfter(request.dueDate!);
 
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
@@ -743,7 +758,7 @@ class _ReturnRequestCard extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.1),
+                        color: Colors.orange.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: Colors.orange),
                       ),
@@ -779,7 +794,7 @@ class _ReturnRequestCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: Colors.red),
                     ),
@@ -808,12 +823,15 @@ class _ReturnRequestCard extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: () async {
                           final result = await _showRejectDialog(context);
-                          if (result != null && result.isNotEmpty && context.mounted) {
+                          if (result != null &&
+                              result.isNotEmpty &&
+                              context.mounted) {
                             final supabase = Supabase.instance.client;
                             final currentUser = supabase.auth.currentUser;
                             final adminId = currentUser?.id ?? request.userId;
 
-                            final success = await borrowingProvider.rejectBookReturn(
+                            final success =
+                                await borrowingProvider.rejectBookReturn(
                               request.id,
                               adminId,
                               result,
@@ -830,7 +848,8 @@ class _ReturnRequestCard extends StatelessWidget {
                           }
                         },
                         icon: const Icon(Icons.close, size: 16),
-                        label: const Text('Reject', style: TextStyle(fontSize: 12)),
+                        label: const Text('Reject',
+                            style: TextStyle(fontSize: 12)),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
                           side: const BorderSide(color: Colors.red),
@@ -846,7 +865,8 @@ class _ReturnRequestCard extends StatelessWidget {
                           final currentUser = supabase.auth.currentUser;
                           final adminId = currentUser?.id ?? request.userId;
 
-                          final success = await borrowingProvider.approveBookReturn(
+                          final success =
+                              await borrowingProvider.approveBookReturn(
                             request.id,
                             adminId,
                           );
@@ -861,7 +881,8 @@ class _ReturnRequestCard extends StatelessWidget {
                           }
                         },
                         icon: const Icon(Icons.check, size: 16),
-                        label: const Text('Approve', style: TextStyle(fontSize: 12)),
+                        label: const Text('Approve',
+                            style: TextStyle(fontSize: 12)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
@@ -882,7 +903,7 @@ class _ReturnRequestCard extends StatelessWidget {
   Future<Map<String, dynamic>> _loadRequestData() async {
     final book = await DatabaseHelper().getBookById(request.bookId);
     final user = await DatabaseHelper().getUserById(request.userId);
-    
+
     return {
       'book': book,
       'user': user,
@@ -894,7 +915,8 @@ class _ReturnRequestCard extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Reject Return', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: Text('Reject Return',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
@@ -980,9 +1002,12 @@ class _BooksTab extends StatelessWidget {
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: book.isAvailable ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+            color: book.isAvailable
+                ? Colors.green.withValues(alpha: 0.1)
+                : Colors.red.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: book.isAvailable ? Colors.green : Colors.red),
+            border:
+                Border.all(color: book.isAvailable ? Colors.green : Colors.red),
           ),
           child: Text(
             book.isAvailable ? 'Available' : 'Unavailable',
@@ -1005,7 +1030,7 @@ class _UsersTab extends StatelessWidget {
       builder: (context, borrowing, child) {
         // Use the cached allActiveBorrowings instead of future
         final activeBorrowings = borrowing.allActiveBorrowings;
-        
+
         if (borrowing.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -1024,15 +1049,15 @@ class _UsersTab extends StatelessWidget {
                 Text(
                   'No Active Users',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                        color: Colors.grey[600],
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'No users have borrowed books',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[500],
-                  ),
+                        color: Colors.grey[500],
+                      ),
                 ),
               ],
             ),
@@ -1055,8 +1080,8 @@ class _UsersTab extends StatelessWidget {
   }
 
   Widget _buildUserBorrowingCard(BuildContext context, BorrowRecord borrowing) {
-    final isOverdue = borrowing.dueDate != null && 
-        DateTime.now().isAfter(borrowing.dueDate!) && 
+    final isOverdue = borrowing.dueDate != null &&
+        DateTime.now().isAfter(borrowing.dueDate!) &&
         borrowing.status == 'borrowed';
 
     return Card(
@@ -1074,9 +1099,10 @@ class _UsersTab extends StatelessWidget {
                     children: [
                       Text(
                         'User ID: ${borrowing.userId}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -1087,30 +1113,40 @@ class _UsersTab extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Borrowed: ${DateFormat('MMM dd, yyyy').format(borrowing.borrowDate!)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                       ],
                       if (borrowing.dueDate != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           'Due: ${DateFormat('MMM dd, yyyy').format(borrowing.dueDate!)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: isOverdue ? Colors.red : Colors.grey[600],
-                            fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color:
+                                    isOverdue ? Colors.red : Colors.grey[600],
+                                fontWeight: isOverdue
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                              ),
                         ),
                       ],
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: _getStatusColor(borrowing.status, isOverdue).withOpacity(0.1),
+                    color: _getStatusColor(borrowing.status, isOverdue)
+                        .withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _getStatusColor(borrowing.status, isOverdue)),
+                    border: Border.all(
+                        color: _getStatusColor(borrowing.status, isOverdue)),
                   ),
                   child: Text(
                     _getStatusText(borrowing.status, isOverdue),
@@ -1123,13 +1159,12 @@ class _UsersTab extends StatelessWidget {
                 ),
               ],
             ),
-            
             if (isOverdue) ...[
               const SizedBox(height: 8),
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -1139,9 +1174,9 @@ class _UsersTab extends StatelessWidget {
                     Text(
                       'OVERDUE - ${DateTime.now().difference(borrowing.dueDate!).inDays} days late',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   ],
                 ),
@@ -1155,7 +1190,7 @@ class _UsersTab extends StatelessWidget {
 
   Color _getStatusColor(String status, bool isOverdue) {
     if (isOverdue) return Colors.red;
-    
+
     switch (status) {
       case 'pending':
         return Colors.orange;
@@ -1170,7 +1205,7 @@ class _UsersTab extends StatelessWidget {
 
   String _getStatusText(String status, bool isOverdue) {
     if (isOverdue) return 'Overdue';
-    
+
     switch (status) {
       case 'pending':
         return 'Pending';
@@ -1188,16 +1223,15 @@ class SampleDataService {
   Future<void> insertSampleData() async {
     // Add implementation for inserting sample data
     // This is a placeholder - implement based on your actual SampleDataService
-    final sampleDataService = SampleDataService();
     // Add your sample data insertion logic here
   }
-  
+
   Future<void> resetSystemForTesting() async {
     // Clear all borrow records and penalties
     final db = await DatabaseHelper().database;
     await db?.delete('borrow_records');
     await db?.delete('penalties');
-    
+
     // Reset all books to full availability
     final books = await db?.query('books') ?? [];
     for (final book in books) {
@@ -1214,7 +1248,7 @@ class SampleDataService {
 
   Future<void> clearAllData() async {
     final db = await DatabaseHelper().database;
-    
+
     // Clear all borrow records
     await db?.execute('DELETE FROM borrow_records');
     await db?.execute('DELETE FROM penalties');

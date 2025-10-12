@@ -11,7 +11,8 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/books/providers/books_provider.dart';
 import 'features/borrowing/providers/borrowing_provider.dart';
 
-import 'package:workmanager/workmanager.dart' if (dart.library.html) 'core/services/workmanager_stub.dart';
+import 'package:workmanager/workmanager.dart'
+    if (dart.library.html) 'core/services/workmanager_stub.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -43,8 +44,10 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => BooksProvider()), // ✅ Auto-loads books
-        ChangeNotifierProvider(create: (_) => BorrowingProvider()), // ✅ Auto-loads borrowings
+        ChangeNotifierProvider(
+            create: (_) => BooksProvider()), // ✅ Auto-loads books
+        ChangeNotifierProvider(
+            create: (_) => BorrowingProvider()), // ✅ Auto-loads borrowings
       ],
       child: const MyApp(),
     ),

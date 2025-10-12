@@ -229,10 +229,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   );
                 },
-                child: Icon(
-                  Icons.book,
-                  size: 80,
-                  color: Theme.of(context).colorScheme.primary,
+                child: Image.asset(
+                  'assets/images/blue_logo.png',
+                  height: 80,
+                  width: 80,
                 ),
               ),
               const SizedBox(height: 16),

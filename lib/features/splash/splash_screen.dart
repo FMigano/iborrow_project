@@ -40,25 +40,25 @@ class _SplashScreenState extends State<SplashScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.book,
-                size: 120,
-                color: Colors.white,
+              Image.asset(
+                'assets/images/blue_logo.png',
+                height: 120,
+                width: 120,
               ),
               const SizedBox(height: 24),
               Text(
                 'iBorrow',
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Library Management System',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.white70,
-                ),
+                      color: Colors.white70,
+                    ),
               ),
               const SizedBox(height: 48),
               const CircularProgressIndicator(

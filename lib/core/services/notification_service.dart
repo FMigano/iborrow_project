@@ -125,4 +125,89 @@ class NotificationService {
   static Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
   }
+
+  /// Schedule due date reminder notification
+  static Future<void> scheduleDueDateReminder({
+    required String bookId,
+    required String bookTitle,
+    required DateTime dueDate,
+  }) async {
+    // Schedule notification 1 day before due date
+    final reminderDate = dueDate.subtract(const Duration(days: 1));
+
+    if (reminderDate.isAfter(DateTime.now())) {
+      await scheduleNotification(
+        id: bookId.hashCode,
+        title: 'Book Due Tomorrow',
+        body:
+            '"$bookTitle" is due tomorrow. Please return on time to avoid penalties.',
+        scheduledDate: reminderDate,
+        payload: 'due_reminder:$bookId',
+      );
+      debugPrint('✅ Scheduled due date reminder for $bookTitle');
+    }
+  }
+
+  /// Notify about overdue book
+  static Future<void> notifyOverdueBook({
+    required String bookId,
+    required String bookTitle,
+    required int daysOverdue,
+  }) async {
+    await showNotification(
+      id: bookId.hashCode + 1000, // Different ID
+      title: 'Overdue Book',
+      body:
+          '"$bookTitle" is $daysOverdue day(s) overdue. Please return immediately.',
+      payload: 'overdue:$bookId',
+    );
+  }
+
+  /// Notify user that reserved book is now available
+  static Future<void> notifyBookAvailable({
+    required String bookId,
+    required String bookTitle,
+    required String userId,
+  }) async {
+    await showNotification(
+      id: bookId.hashCode + 2000, // Different ID
+      title: 'Reserved Book Available!',
+      body:
+          '"$bookTitle" is now available for you to borrow. Reserve expires in 48 hours.',
+      payload: 'book_available:$bookId',
+    );
+    debugPrint('✅ Notified user about book availability');
+  }
+
+  /// Notify admin about new borrow request
+  static Future<void> notifyAdminNewRequest({
+    required String userName,
+    required String bookTitle,
+  }) async {
+    await showNotification(
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: 'New Borrow Request',
+      body: '$userName requested to borrow "$bookTitle"',
+      payload: 'admin_request',
+    );
+  }
+
+  /// Notify user about request approval
+  static Future<void> notifyRequestApproved({
+    required String bookTitle,
+    required DateTime dueDate,
+  }) async {
+    await showNotification(
+      id: DateTime.now().millisecondsSinceEpoch,
+      title: 'Request Approved',
+      body:
+          'Your request for "$bookTitle" has been approved. Due date: ${dueDate.toLocal().toString().split(' ')[0]}',
+      payload: 'request_approved',
+    );
+  }
+
+  /// Cancel due date reminder for a book
+  static Future<void> cancelDueDateReminder(String bookId) async {
+    await cancelNotification(bookId.hashCode);
+  }
 }

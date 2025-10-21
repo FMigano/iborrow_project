@@ -3,7 +3,6 @@ import 'package:uuid/uuid.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/database/database_helper.dart';
 import '../../../core/models/book.dart';
-import '../../../core/services/sample_data_service.dart';
 
 class BooksProvider extends ChangeNotifier {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
@@ -32,15 +31,10 @@ class BooksProvider extends ChangeNotifier {
     debugPrint('📚 BooksProvider: Initializing data...');
     await loadBooks();
 
-    // If no books found, insert sample data
+    // Books are automatically loaded from Google Books API in the dashboard
     if (_books.isEmpty) {
-      debugPrint('📚 No books found, inserting sample data...');
-      try {
-        await SampleDataService().insertSampleData();
-        await loadBooks();
-      } catch (e) {
-        debugPrint('❌ Error inserting sample data: $e');
-      }
+      debugPrint(
+          '📚 No books in library. Google Books will display in user dashboard.');
     }
   }
 

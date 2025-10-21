@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
+  // Color constants
+  static const Color primaryBlue = Color(0xFF2196F3);
+  static const Color backgroundWhite = Color(0xFFFFFFFF);
+  static const Color cardGrey = Color(0xFFF5F5F5);
+  static const Color textDark = Color(0xFF212121);
+  static const Color textGrey = Color(0xFF757575);
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      scaffoldBackgroundColor: backgroundWhite,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF2196F3),
+        seedColor: primaryBlue,
         brightness: Brightness.light,
+        surface: backgroundWhite,
       ),
       // Apply Google Fonts to text theme
       textTheme: GoogleFonts.poppinsTextTheme(
@@ -81,15 +90,23 @@ class AppTheme {
         centerTitle: true,
         elevation: 0,
         scrolledUnderElevation: 1,
+        backgroundColor: backgroundWhite,
+        surfaceTintColor: Colors.transparent,
         titleTextStyle: GoogleFonts.poppins(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: const Color(0xFF2196F3),
+          color: textDark,
         ),
+        iconTheme: const IconThemeData(color: textDark),
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         elevation: 2,
-        margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        shadowColor: Colors.black.withValues(alpha: 0.1),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: backgroundWhite,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -127,7 +144,8 @@ class AppTheme {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         labelStyle: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,
@@ -142,11 +160,14 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
+    // Using light theme for dark mode as well (all white backgrounds)
     return ThemeData(
       useMaterial3: true,
+      scaffoldBackgroundColor: backgroundWhite,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF2196F3),
-        brightness: Brightness.dark,
+        seedColor: primaryBlue,
+        brightness: Brightness.light, // Force light for white backgrounds
+        surface: backgroundWhite,
       ),
       // Apply Google Fonts to dark theme text
       textTheme: GoogleFonts.poppinsTextTheme(
@@ -280,7 +301,8 @@ class AppTheme {
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         labelStyle: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.w400,

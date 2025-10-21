@@ -236,13 +236,23 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     children: [
                       Icon(
                         Icons.library_books,
-                        color: _book!.availableCopies > 0 ? Colors.green : Colors.red,
+                        color: _book!.totalCopies > 0
+                            ? (_book!.availableCopies > 0
+                                ? Colors.green
+                                : Colors.red)
+                            : Colors.orange,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        '${_book!.availableCopies} of ${_book!.totalCopies} available',
+                        _book!.totalCopies > 0
+                            ? '${_book!.availableCopies} of ${_book!.totalCopies} available'
+                            : 'External book from Google Books',
                         style: TextStyle(
-                          color: _book!.availableCopies > 0 ? Colors.green : Colors.red,
+                          color: _book!.totalCopies > 0
+                              ? (_book!.availableCopies > 0
+                                  ? Colors.green
+                                  : Colors.red)
+                              : Colors.orange,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -282,6 +292,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       bottomNavigationBar: Consumer2<AuthProvider, BorrowingProvider>(
         builder: (context, authProvider, borrowingProvider, child) {
           final isAuthenticated = authProvider.isAuthenticated;
+          final isGoogleBook =
+              _book!.totalCopies == 0; // Google Books have 0 copies
           final canBorrow = isAuthenticated && 
                           _book!.availableCopies > 0 && 
                           borrowingProvider.canBorrowBooks;
@@ -292,6 +304,50 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
               child: ElevatedButton(
                 onPressed: () => context.go('/login'),
                 child: const Text('Login to Borrow'),
+              ),
+            );
+          }
+
+          // Show different message for Google Books
+          if (isGoogleBook) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange[50],
+                border: Border(top: BorderSide(color: Colors.orange[200]!)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.info_outline,
+                      color: Colors.orange, size: 32),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'This is an external book from Google Books',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Not available for borrowing in this library',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content:
+                              Text('Contact library admin to add this book'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.email_outlined, size: 18),
+                    label: const Text('Request Library to Add'),
+                  ),
+                ],
               ),
             );
           }

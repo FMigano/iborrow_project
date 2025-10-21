@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart'; // Add this import
 import '../../auth/providers/auth_provider.dart';
 import '../../books/providers/books_provider.dart';
 import '../../borrowing/providers/borrowing_provider.dart';
-import '../../books/screens/book_list_screen.dart';
+import '../../books/screens/books_dashboard_screen.dart';
 import '../../borrowing/screens/my_borrowings_screen.dart' as borrowing_screens;
+import '../../user/screens/user_libraries_screen.dart';
+import '../../user/screens/community_feed_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +22,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _screens = const [
     BooksScreen(),
-    MyBorrowingsScreen(),
+    FeedScreen(),
+    BorrowingsScreen(),
+    LibraryScreen(),
     ProfileScreen(),
   ];
 
@@ -69,8 +73,16 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Books',
           ),
           NavigationDestination(
+            icon: Icon(Icons.forum),
+            label: 'Feed',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.library_books),
-            label: 'My Books',
+            label: 'Borrowings',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.collections_bookmark),
+            label: 'Library',
           ),
           NavigationDestination(
             icon: Icon(Icons.person),
@@ -87,16 +99,34 @@ class BooksScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const BookListScreen();
+    return const BooksDashboardScreen();
   }
 }
 
-class MyBorrowingsScreen extends StatelessWidget {
-  const MyBorrowingsScreen({super.key});
+class FeedScreen extends StatelessWidget {
+  const FeedScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const CommunityFeedScreen();
+  }
+}
+
+class BorrowingsScreen extends StatelessWidget {
+  const BorrowingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return const borrowing_screens.MyBorrowingsScreen();
+  }
+}
+
+class LibraryScreen extends StatelessWidget {
+  const LibraryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const UserLibrariesScreen();
   }
 }
 
@@ -273,7 +303,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Contact us at: support@iborrow.com\nOr visit the library front desk',
+                      'Contact us at: support@iborrow.com',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: Colors.blue[700],
@@ -304,6 +334,13 @@ class ProfileScreen extends StatelessWidget {
           style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () => context.push('/profile/edit'),
+            tooltip: 'Edit Profile',
+          ),
+        ],
       ),
       body: Consumer2<AuthProvider, BorrowingProvider>(
         builder: (context, auth, borrowing, child) {
@@ -317,311 +354,294 @@ class ProfileScreen extends StatelessWidget {
           final active = borrowings.where((b) => b.status == 'borrowed').length;
           final overdue = borrowings.where((b) => b.isOverdue).length;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // User Profile Card
-                Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 50,
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primary,
-                          child: Text(
-                            user?.fullName.isNotEmpty == true
-                                ? user!.fullName.substring(0, 1).toUpperCase()
-                                : user?.email.substring(0, 1).toUpperCase() ??
-                                    'U',
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // User Profile Card
+                  Card(
+                    elevation: 4,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor:
+                                Theme.of(context).colorScheme.primary,
+                            backgroundImage: user?.avatarUrl != null &&
+                                    user!.avatarUrl!.isNotEmpty &&
+                                    user.avatarUrl != 'temp'
+                                ? NetworkImage(user.avatarUrl!)
+                                : null,
+                            child: user?.avatarUrl == null ||
+                                    user?.avatarUrl?.isEmpty == true ||
+                                    user?.avatarUrl == 'temp'
+                                ? Text(
+                                    user?.fullName.isNotEmpty == true
+                                        ? user!.fullName
+                                            .substring(0, 1)
+                                            .toUpperCase()
+                                        : user?.email
+                                                .substring(0, 1)
+                                                .toUpperCase() ??
+                                            'U',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            user?.fullName ?? 'User Name',
                             style: GoogleFonts.poppins(
-                              fontSize: 36,
+                              fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          user?.fullName ?? 'User Name',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          user?.email ?? '',
-                          style: GoogleFonts.inter(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                        if (user?.studentId != null) ...[
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Text(
-                              'ID: ${user!.studentId}',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.email ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              color: Colors.grey[600],
                             ),
                           ),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Borrowing Statistics
-                Text(
-                  'Borrowing Statistics',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  // Borrowing Statistics
+                  Text(
+                    'Borrowing Statistics',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Total Borrowed',
-                        totalBorrowed.toString(),
-                        Icons.library_books,
-                        Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Returned',
-                        returned.toString(),
-                        Icons.check_circle,
-                        Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Currently Borrowed',
-                        active.toString(),
-                        Icons.book,
-                        Colors.orange,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildStatCard(
-                        context,
-                        'Overdue',
-                        overdue.toString(),
-                        Icons.warning,
-                        Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // User Information
-                Text(
-                  'Account Information',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                Card(
-                  child: Column(
+                  Row(
                     children: [
-                      ListTile(
-                        leading: const Icon(Icons.person),
-                        title: Text(
-                          'Full Name',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          user?.fullName ?? 'Not provided',
-                          style: GoogleFonts.inter(),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          'Total Borrowed',
+                          totalBorrowed.toString(),
+                          Icons.library_books,
+                          Colors.blue,
                         ),
                       ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.email),
-                        title: Text(
-                          'Email',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          user?.email ?? '',
-                          style: GoogleFonts.inter(),
-                        ),
-                      ),
-                      if (user?.studentId != null) ...[
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.badge),
-                          title: Text(
-                            'Student ID',
-                            style:
-                                GoogleFonts.inter(fontWeight: FontWeight.w500),
-                          ),
-                          subtitle: Text(
-                            user!.studentId!,
-                            style: GoogleFonts.inter(),
-                          ),
-                        ),
-                      ],
-                      if (user?.phoneNumber != null) ...[
-                        const Divider(height: 1),
-                        ListTile(
-                          leading: const Icon(Icons.phone),
-                          title: Text(
-                            'Phone Number',
-                            style:
-                                GoogleFonts.inter(fontWeight: FontWeight.w500),
-                          ),
-                          subtitle: Text(
-                            user!.phoneNumber!,
-                            style: GoogleFonts.inter(),
-                          ),
-                        ),
-                      ],
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.calendar_today),
-                        title: Text(
-                          'Member Since',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          user?.createdAt != null
-                              ? '${user!.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}'
-                              : 'Unknown',
-                          style: GoogleFonts.inter(),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          'Returned',
+                          returned.toString(),
+                          Icons.check_circle,
+                          Colors.green,
                         ),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 12),
 
-                const SizedBox(height: 24),
-
-                // Settings & Actions
-                Text(
-                  'Settings & Support',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-
-                Card(
-                  child: Column(
+                  Row(
                     children: [
-                      ListTile(
-                        leading: const Icon(Icons.help),
-                        title: Text(
-                          'Help & Support',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          'Currently Borrowed',
+                          active.toString(),
+                          Icons.book,
+                          Colors.orange,
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () => _showHelpDialog(context),
                       ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(Icons.info),
-                        title: Text(
-                          'About iBorrow',
-                          style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          context,
+                          'Overdue',
+                          overdue.toString(),
+                          Icons.warning,
+                          Colors.red,
                         ),
-                        trailing: const Icon(Icons.arrow_forward_ios),
-                        onTap: () => _showAboutDialog(context),
                       ),
                     ],
                   ),
-                ),
 
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                // Sign Out Button
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: () async {
-                      final confirmed = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Sign Out'),
-                          content:
-                              const Text('Are you sure you want to sign out?'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                  // User Information
+                  Text(
+                    'Account Information',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.person),
+                          title: Text(
+                            'Full Name',
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            user?.fullName ?? 'Not provided',
+                            style: GoogleFonts.inter(),
+                          ),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.email),
+                          title: Text(
+                            'Email',
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            user?.email ?? '',
+                            style: GoogleFonts.inter(),
+                          ),
+                        ),
+                        if (user?.phoneNumber != null) ...[
+                          const Divider(height: 1),
+                          ListTile(
+                            leading: const Icon(Icons.phone),
+                            title: Text(
+                              'Phone Number',
+                              style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w500),
                             ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: Colors.red,
+                            subtitle: Text(
+                              user!.phoneNumber!,
+                              style: GoogleFonts.inter(),
+                            ),
+                          ),
+                        ],
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.calendar_today),
+                          title: Text(
+                            'Member Since',
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            user?.createdAt != null
+                                ? '${user!.createdAt.day}/${user.createdAt.month}/${user.createdAt.year}'
+                                : 'Unknown',
+                            style: GoogleFonts.inter(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Settings & Actions
+                  Text(
+                    'Settings & Support',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Card(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.help),
+                          title: Text(
+                            'Help & Support',
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () => _showHelpDialog(context),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.info),
+                          title: Text(
+                            'About iBorrow',
+                            style:
+                                GoogleFonts.inter(fontWeight: FontWeight.w500),
+                          ),
+                          trailing: const Icon(Icons.arrow_forward_ios),
+                          onTap: () => _showAboutDialog(context),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Sign Out Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Sign Out'),
+                            content: const Text(
+                                'Are you sure you want to sign out?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context, false),
+                                child: const Text('Cancel'),
                               ),
-                              child: const Text('Sign Out'),
-                            ),
-                          ],
-                        ),
-                      );
+                              FilledButton(
+                                onPressed: () => Navigator.pop(context, true),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text('Sign Out'),
+                              ),
+                            ],
+                          ),
+                        );
 
-                      if (confirmed == true) {
-                        await auth.signOut();
-                        // Add navigation to login screen after sign out
-                        if (context.mounted) {
-                          context.go('/login');
+                        if (confirmed == true) {
+                          await auth.signOut();
+                          // Add navigation to login screen after sign out
+                          if (context.mounted) {
+                            context.go('/login');
+                          }
                         }
-                      }
-                    },
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Sign Out'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      },
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Sign Out'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 16),
-              ],
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
           );
         },

@@ -50,14 +50,14 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _createUserInDatabase(supabase.User supabaseUser) async {
-    // ✅ FIX: Read phone_number from userMetadata, not from supabaseUser.phone
     final user = User(
       id: supabaseUser.id,
       email: supabaseUser.email ?? '',
       fullName: supabaseUser.userMetadata?['full_name'] ?? '',
-      studentId: supabaseUser.userMetadata?['student_id'],
-      phoneNumber: supabaseUser
-          .userMetadata?['phone_number'], // ✅ FIXED: Read from metadata
+      phoneNumber: supabaseUser.userMetadata?['phone_number'],
+      avatarUrl: supabaseUser.userMetadata?['avatar_url'],
+      bio: supabaseUser.userMetadata?['bio'],
+      favoriteGenre: supabaseUser.userMetadata?['favorite_genre'],
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
     );
@@ -71,8 +71,8 @@ class AuthProvider extends ChangeNotifier {
     required String email,
     required String password,
     required String fullName,
-    String? studentId,
     String? phoneNumber,
+    String? avatarUrl,
   }) async {
     try {
       _setLoading(true);
@@ -83,8 +83,8 @@ class AuthProvider extends ChangeNotifier {
         password: password,
         data: {
           'full_name': fullName,
-          'student_id': studentId,
           'phone_number': phoneNumber,
+          'avatar_url': avatarUrl,
         },
       );
 
@@ -152,6 +152,12 @@ class AuthProvider extends ChangeNotifier {
 
   void _clearError() {
     _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Update current user in memory
+  void updateCurrentUser(User user) {
+    _currentUser = user;
     notifyListeners();
   }
 }

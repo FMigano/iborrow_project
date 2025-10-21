@@ -110,7 +110,6 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Email: ${user.email}'),
-                Text('Student ID: ${user.studentId}'),
                 Text('Admin: ${user.isAdmin ? "YES" : "NO"}'),
                 Text('ID: ${user.id}'),
               ],

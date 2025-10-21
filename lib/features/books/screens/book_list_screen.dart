@@ -30,7 +30,8 @@ class _BookListScreenState extends State<BookListScreen> {
         title: const Text('Browse Books'),
         actions: [
           IconButton(
-            icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
+            icon:
+                Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
             onPressed: () {
               setState(() {
                 _showFilters = !_showFilters;
@@ -94,16 +95,18 @@ class _BookListScreenState extends State<BookListScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'No books found',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.grey[600],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Try adjusting your search or filters',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey[500],
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Colors.grey[500],
+                                  ),
                         ),
                       ],
                     ),
@@ -212,8 +215,8 @@ class _BookListScreenState extends State<BookListScreen> {
                     Text(
                       book.title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -221,8 +224,8 @@ class _BookListScreenState extends State<BookListScreen> {
                     Text(
                       'by ${book.author}',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Container(
@@ -237,8 +240,10 @@ class _BookListScreenState extends State<BookListScreen> {
                       child: Text(
                         book.genre,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onPrimaryContainer,
+                            ),
                       ),
                     ),
                     if (book.description != null) ...[
@@ -280,7 +285,8 @@ class _BookListScreenState extends State<BookListScreen> {
                     '${book.availableCopies}/${book.totalCopies}',
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: book.availableCopies > 0 ? Colors.green : Colors.red,
+                      color:
+                          book.availableCopies > 0 ? Colors.green : Colors.red,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

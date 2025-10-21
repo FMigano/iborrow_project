@@ -318,7 +318,7 @@ class _MyBorrowingsScreenState extends State<MyBorrowingsScreen>
               TextField(
                 controller: controller,
                 decoration: const InputDecoration(
-                  labelText: 'Return notes (optional)',
+                  labelText: 'Return notes',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,

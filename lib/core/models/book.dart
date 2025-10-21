@@ -6,6 +6,10 @@ class Book {
   final String genre;
   final String? description;
   final String? imageUrl;
+  final String? publisher;
+  final int? yearPublished;
+  final double averageRating;
+  final int reviewCount;
   final int totalCopies;
   final int availableCopies;
   final DateTime createdAt;
@@ -19,6 +23,10 @@ class Book {
     required this.genre,
     this.description,
     this.imageUrl,
+    this.publisher,
+    this.yearPublished,
+    this.averageRating = 0.0,
+    this.reviewCount = 0,
     this.totalCopies = 1,
     this.availableCopies = 1,
     required this.createdAt,
@@ -26,6 +34,7 @@ class Book {
   });
 
   bool get isAvailable => availableCopies > 0;
+  bool get hasRatings => reviewCount > 0;
 
   Book copyWith({
     String? id,
@@ -35,6 +44,10 @@ class Book {
     String? isbn,
     String? description,
     String? imageUrl,
+    String? publisher,
+    int? yearPublished,
+    double? averageRating,
+    int? reviewCount,
     int? totalCopies,
     int? availableCopies,
     DateTime? createdAt,
@@ -48,6 +61,10 @@ class Book {
       isbn: isbn ?? this.isbn,
       description: description ?? this.description,
       imageUrl: imageUrl ?? this.imageUrl,
+      publisher: publisher ?? this.publisher,
+      yearPublished: yearPublished ?? this.yearPublished,
+      averageRating: averageRating ?? this.averageRating,
+      reviewCount: reviewCount ?? this.reviewCount,
       totalCopies: totalCopies ?? this.totalCopies,
       availableCopies: availableCopies ?? this.availableCopies,
       createdAt: createdAt ?? this.createdAt,
@@ -64,6 +81,10 @@ class Book {
       isbn: map['isbn'],
       description: map['description'],
       imageUrl: map['image_url'],
+      publisher: map['publisher'],
+      yearPublished: map['year_published'],
+      averageRating: (map['average_rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: map['review_count'] ?? 0,
       totalCopies: map['total_copies'] ?? 0,
       availableCopies: map['available_copies'] ?? 0,
       createdAt:
@@ -82,6 +103,10 @@ class Book {
       'genre': genre,
       'description': description,
       'image_url': imageUrl,
+      'publisher': publisher,
+      'year_published': yearPublished,
+      'average_rating': averageRating,
+      'review_count': reviewCount,
       'total_copies': totalCopies,
       'available_copies': availableCopies,
       'created_at': createdAt.toIso8601String(),
@@ -98,6 +123,10 @@ class Book {
       isbn: map['isbn'],
       description: map['description'],
       imageUrl: map['image_url'],
+      publisher: map['publisher'],
+      yearPublished: map['year_published'],
+      averageRating: (map['average_rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: map['review_count'] ?? 0,
       totalCopies: map['total_copies'] ?? 0,
       availableCopies: map['available_copies'] ?? 0,
       createdAt:
@@ -116,6 +145,10 @@ class Book {
       'genre': genre,
       'description': description,
       'image_url': imageUrl,
+      'publisher': publisher,
+      'year_published': yearPublished,
+      'average_rating': averageRating,
+      'review_count': reviewCount,
       'total_copies': totalCopies,
       'available_copies': availableCopies,
       'created_at': createdAt.toIso8601String(),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
+import '../../../core/services/storage_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -16,11 +17,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _fullNameController = TextEditingController();
-  final _studentIdController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _acceptedTerms = false; // New: Terms acceptance
+  String? _avatarUrl; // Profile picture URL
+  bool _isUploadingAvatar = false;
 
   @override
   void dispose() {
@@ -28,14 +30,60 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _fullNameController.dispose();
-    _studentIdController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
+  Future<void> _pickProfileImage() async {
+    setState(() => _isUploadingAvatar = true);
+
+    try {
+      final imageFile = await StorageService.pickImage();
+      if (imageFile == null) {
+        setState(() => _isUploadingAvatar = false);
+        return;
+      }
+
+      // Generate a temporary ID for the upload
+      final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+      final uploadedUrl = await StorageService.uploadAvatar(
+        userId: tempId,
+        imageFile: imageFile,
+      );
+
+      if (uploadedUrl != null) {
+        setState(() {
+          _avatarUrl = uploadedUrl;
+          _isUploadingAvatar = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profile picture uploaded!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        throw Exception('Upload failed');
+      }
+    } catch (e) {
+      setState(() => _isUploadingAvatar = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error uploading image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     // Check if terms are accepted
     if (!_acceptedTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -52,18 +100,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       fullName: _fullNameController.text.trim(),
-      studentId: _studentIdController.text.trim().isNotEmpty 
-          ? _studentIdController.text.trim() 
+      phoneNumber: _phoneController.text.trim().isNotEmpty
+          ? _phoneController.text.trim()
           : null,
-      phoneNumber: _phoneController.text.trim().isNotEmpty 
-          ? _phoneController.text.trim() 
-          : null,
+      avatarUrl: _avatarUrl,
     );
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully! Please check your email to verify in order to use full capabilities.'),
+          content: Text('Account created successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -94,56 +140,49 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   Text(
                     'iBorrow Library Management System',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 16),
-                  
                   _buildSection(
                     'Acceptance of Terms',
                     'By creating an account and using iBorrow, you agree to be bound by these Terms and Conditions and our Privacy Policy.',
                   ),
-                  
                   _buildSection(
                     'User Responsibilities',
                     '• You must provide accurate and complete information when registering\n'
-                    '• You are responsible for maintaining the confidentiality of your account\n'
-                    '• You must not share your login credentials with others\n'
-                    '• You agree to use the system responsibly and in accordance with library policies',
+                        '• You are responsible for maintaining the confidentiality of your account\n'
+                        '• You must not share your login credentials with others\n'
+                        '• You agree to use the system responsibly and in accordance with library policies',
                   ),
-                  
                   _buildSection(
                     'Borrowing Rules',
                     '• Books must be returned by the due date\n'
-                    '• Late returns may result in penalties or fines\n'
-                    '• Damaged or lost books must be reported immediately\n'
-                    '• Users may be suspended for repeated violations',
+                        '• Late returns may result in penalties or fines\n'
+                        '• Damaged or lost books must be reported immediately\n'
+                        '• Users may be suspended for repeated violations',
                   ),
-                  
                   _buildSection(
                     'Privacy and Data Protection',
                     'We collect and process your personal information in accordance with our Privacy Policy. Your data is used solely for library management purposes and will not be shared with third parties without your consent.',
                   ),
-                  
                   _buildSection(
                     'System Usage',
                     '• The system is for educational and research purposes only\n'
-                    '• Misuse of the system may result in account suspension\n'
-                    '• We reserve the right to modify or terminate the service at any time',
+                        '• Misuse of the system may result in account suspension\n'
+                        '• We reserve the right to modify or terminate the service at any time',
                   ),
-                  
                   _buildSection(
                     'Limitation of Liability',
                     'iBorrow and its administrators are not liable for any damages arising from the use of this system. The service is provided "as is" without warranties.',
                   ),
-                  
                   const SizedBox(height: 16),
                   Text(
                     'Last updated: ${DateTime.now().toString().split(' ')[0]}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontStyle: FontStyle.italic,
-                      color: Colors.grey[600],
-                    ),
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey[600],
+                        ),
                   ),
                 ],
               ),
@@ -178,8 +217,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           Text(
             title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -206,21 +245,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 children: [
                   _buildSection(
                     'Information We Collect',
-                    'We collect information you provide when registering, including your name, email, student ID, and phone number.',
+                    'We collect information you provide when registering, including your name, email, and phone number.',
                   ),
-                  
                   _buildSection(
                     'How We Use Your Information',
                     '• To manage your library account and borrowing activities\n'
-                    '• To send notifications about due dates and library updates\n'
-                    '• To improve our services and user experience',
+                        '• To send notifications about due dates and library updates\n'
+                        '• To improve our services and user experience',
                   ),
-                  
                   _buildSection(
                     'Data Security',
                     'We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.',
                   ),
-                  
                   _buildSection(
                     'Your Rights',
                     'You have the right to access, update, or delete your personal information. Contact us if you wish to exercise these rights.',
@@ -256,13 +292,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             children: [
               const SizedBox(height: 24),
-              Icon(
-                Icons.person_add,
-                size: 60,
-                color: Theme.of(context).colorScheme.primary,
+              // Profile Picture Upload
+              GestureDetector(
+                onTap: _isUploadingAvatar ? null : _pickProfileImage,
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withValues(alpha: 0.1),
+                      backgroundImage:
+                          _avatarUrl != null ? NetworkImage(_avatarUrl!) : null,
+                      child: _avatarUrl == null
+                          ? Icon(
+                              Icons.person_add,
+                              size: 50,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : null,
+                    ),
+                    if (_isUploadingAvatar)
+                      const Positioned.fill(
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tap to add profile picture',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Colors.grey[600],
+                    ),
               ),
               const SizedBox(height: 24),
-
               Card(
                 elevation: 4,
                 child: Padding(
@@ -305,21 +389,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
-                          controller: _studentIdController,
-                          decoration: const InputDecoration(
-                            labelText: 'Student ID (Optional)',
-                            prefixIcon: Icon(Icons.badge),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: const InputDecoration(
-                            labelText: 'Phone Number (Optional)',
-                            prefixIcon: Icon(Icons.phone),
-                          ),
-                        ),
+                            controller: _phoneController,
+                            keyboardType: TextInputType.phone,
+                            decoration: const InputDecoration(
+                              labelText: 'Phone Number',
+                              prefixIcon: Icon(Icons.phone),
+                            ),
+                            validator: (value) {
+                              if (value?.isEmpty ?? true) {
+                                return 'Please enter your phone number';
+                              }
+                              return null;
+                            }),
                         const SizedBox(height: 16),
                         TextFormField(
                           controller: _passwordController,
@@ -361,7 +442,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   : Icons.visibility),
                               onPressed: () {
                                 setState(() {
-                                  _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                                  _isConfirmPasswordVisible =
+                                      !_isConfirmPasswordVisible;
                                 });
                               },
                             ),
@@ -382,12 +464,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Container(
                           padding: const EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
-                              color: _acceptedTerms 
-                                ? Theme.of(context).colorScheme.primary 
-                                : Colors.grey.withValues(alpha: 0.3),
+                              color: _acceptedTerms
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Colors.grey.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Column(
@@ -406,7 +491,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     child: Text.rich(
                                       TextSpan(
                                         text: 'I agree to the ',
-                                        style: Theme.of(context).textTheme.bodyMedium,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
                                         children: [
                                           WidgetSpan(
                                             child: GestureDetector(
@@ -414,8 +501,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               child: Text(
                                                 'Terms and Conditions',
                                                 style: TextStyle(
-                                                  color: Theme.of(context).colorScheme.primary,
-                                                  decoration: TextDecoration.underline,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                  decoration:
+                                                      TextDecoration.underline,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -428,8 +518,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               child: Text(
                                                 'Privacy Policy',
                                                 style: TextStyle(
-                                                  color: Theme.of(context).colorScheme.primary,
-                                                  decoration: TextDecoration.underline,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .primary,
+                                                  decoration:
+                                                      TextDecoration.underline,
                                                   fontWeight: FontWeight.w500,
                                                 ),
                                               ),
@@ -455,9 +548,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       Expanded(
                                         child: Text(
                                           'Please read and accept our terms to continue',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Colors.grey[600],
-                                          ),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Colors.grey[600],
+                                              ),
                                         ),
                                       ),
                                     ],
@@ -473,7 +569,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             return SizedBox(
                               width: double.infinity,
                               child: FilledButton(
-                                onPressed: (auth.isLoading || !_acceptedTerms) ? null : _handleSignUp,
+                                onPressed: (auth.isLoading || !_acceptedTerms)
+                                    ? null
+                                    : _handleSignUp,
                                 child: auth.isLoading
                                     ? const SizedBox(
                                         height: 20,
@@ -494,7 +592,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

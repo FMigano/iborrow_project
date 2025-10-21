@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 16,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Sign In as Admin'),
+                      : const Text('Sign In'),
                 );
               },
             ),

@@ -73,23 +73,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
               horizontal: 4), // Better indicator spacing
           tabs: const [
             Tab(
-              icon: Icon(Icons.dashboard, size: 16),
+              icon: Icon(Icons.dashboard, size: 16, color: Colors.black),
               text: 'Overview',
             ),
             Tab(
-              icon: Icon(Icons.pending_actions, size: 16),
+              icon: Icon(Icons.pending_actions, size: 16, color: Colors.black),
               text: 'Requests',
             ),
             Tab(
-              icon: Icon(Icons.assignment_return, size: 16),
+              icon:
+                  Icon(Icons.assignment_return, size: 16, color: Colors.black),
               text: 'Returns',
             ),
             Tab(
-              icon: Icon(Icons.library_books, size: 16),
+              icon: Icon(Icons.library_books, size: 16, color: Colors.black),
               text: 'Books',
             ),
             Tab(
-              icon: Icon(Icons.people, size: 16),
+              icon: Icon(Icons.people, size: 16, color: Colors.black),
               text: 'Users',
             ),
           ],
@@ -194,25 +195,6 @@ class _OverviewTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // Reset & Reload Button
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.refresh, color: Colors.blue),
-                title: Text(
-                  'Reset & Reload Sample Data',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                ),
-                subtitle: Text(
-                  'Clear all data and reload sample books',
-                  style: GoogleFonts.inter(fontSize: 12),
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () => _showResetDialog(context),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
             // Database Viewer Button
             Card(
               child: ListTile(
@@ -240,122 +222,6 @@ class _OverviewTab extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // ✅ ADD THIS METHOD
-  Future<void> _showResetDialog(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.orange),
-            const SizedBox(width: 8),
-            Text(
-              'Reset Data',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This will:',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 8),
-            Text('• Delete all borrow records', style: GoogleFonts.inter()),
-            Text('• Delete all penalties', style: GoogleFonts.inter()),
-            Text('• Reset book availability', style: GoogleFonts.inter()),
-            Text('• Reload sample books from Supabase',
-                style: GoogleFonts.inter()),
-            const SizedBox(height: 16),
-            Text(
-              'Continue?',
-              style: GoogleFonts.poppins(
-                fontWeight: FontWeight.w600,
-                color: Colors.orange,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Reset'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      // Show loading
-      try {
-        // Show loading
-        if (context.mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => const Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        // Clear all data
-        final sampleDataService = SampleDataService();
-        await sampleDataService.clearAllData();
-
-        // Insert fresh sample data
-        await sampleDataService.insertSampleData();
-
-        // Reload data in providers
-        if (context.mounted) {
-          final booksProvider =
-              Provider.of<BooksProvider>(context, listen: false);
-          final borrowingProvider =
-              Provider.of<BorrowingProvider>(context, listen: false);
-
-          await Future.wait([
-            booksProvider.loadBooks(),
-            borrowingProvider.loadPendingRequests(),
-          ]);
-        }
-
-        // Close loading dialog
-        if (context.mounted) {
-          Navigator.pop(context);
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Data reset and reloaded successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        debugPrint('❌ Error resetting data: $e');
-
-        // Close loading dialog
-        if (context.mounted) {
-          Navigator.pop(context);
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Error: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 
   Future<void> _loadData(BuildContext context) async {
@@ -1216,45 +1082,5 @@ class _UsersTab extends StatelessWidget {
       default:
         return status;
     }
-  }
-}
-
-class SampleDataService {
-  Future<void> insertSampleData() async {
-    // Add implementation for inserting sample data
-    // This is a placeholder - implement based on your actual SampleDataService
-    // Add your sample data insertion logic here
-  }
-
-  Future<void> resetSystemForTesting() async {
-    // Clear all borrow records and penalties
-    final db = await DatabaseHelper().database;
-    await db?.delete('borrow_records');
-    await db?.delete('penalties');
-
-    // Reset all books to full availability
-    final books = await db?.query('books') ?? [];
-    for (final book in books) {
-      await db?.update(
-        'books',
-        {
-          'available_copies': book['total_copies'],
-        },
-        where: 'id = ?',
-        whereArgs: [book['id']],
-      );
-    }
-  }
-
-  Future<void> clearAllData() async {
-    final db = await DatabaseHelper().database;
-
-    // Clear all borrow records
-    await db?.execute('DELETE FROM borrow_records');
-    await db?.execute('DELETE FROM penalties');
-
-    // Reset book availability
-    await DatabaseHelper().resetAllBookAvailability();
-    await DatabaseHelper().resetAllBookAvailability();
   }
 }

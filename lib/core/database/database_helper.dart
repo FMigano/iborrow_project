@@ -52,9 +52,10 @@ class DatabaseHelper {
         id TEXT PRIMARY KEY,
         email TEXT NOT NULL UNIQUE,
         full_name TEXT NOT NULL,
-        student_id TEXT,
         phone_number TEXT,
-        is_admin INTEGER DEFAULT 0,
+        bio TEXT,
+        avatar_url TEXT,
+        favorite_genre TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
@@ -694,22 +695,69 @@ class DatabaseHelper {
 
   Future<app_models.User?> _getUserFromSupabase(String id) async {
     try {
-      final response =
-          await _supabase.from('users').select().eq('id', id).single();
+      debugPrint('🔍 Fetching user from Supabase: $id');
+
+      final response = await _supabase
+          .from('users')
+          .select()
+          .eq('id', id)
+          .maybeSingle(); // Changed from .single() to .maybeSingle()
+
+      if (response == null) {
+        debugPrint('⚠️ User not found in Supabase: $id');
+        return null;
+      }
+
+      debugPrint('✅ User fetched from Supabase: ${response['email']}');
       return app_models.User.fromSupabaseMap(response);
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Supabase PostgrestException:');
+      debugPrint('   - Message: ${e.message}');
+      debugPrint('   - Code: ${e.code}');
+      debugPrint('   - Details: ${e.details}');
+      debugPrint('   - Hint: ${e.hint}');
+
+      if (e.code == '406' || e.message.contains('406')) {
+        debugPrint(
+            '⚠️ 406 Error: This usually means RLS policies are blocking the request.');
+        debugPrint(
+            '   Please check your Supabase RLS policies for the users table.');
+      }
+      return null;
     } catch (e) {
-      debugPrint('Failed to get user from Supabase: $e');
+      debugPrint('❌ Failed to get user from Supabase: $e');
       return null;
     }
   }
 
   Future<Book?> _getBookFromSupabase(String id) async {
     try {
-      final response =
-          await _supabase.from('books').select().eq('id', id).single();
+      debugPrint('🔍 Fetching book from Supabase: $id');
+
+      final response = await _supabase
+          .from('books')
+          .select()
+          .eq('id', id)
+          .maybeSingle(); // Changed from .single() to .maybeSingle()
+
+      if (response == null) {
+        debugPrint('⚠️ Book not found in Supabase: $id');
+        return null;
+      }
+
+      debugPrint('✅ Book fetched from Supabase: ${response['title']}');
       return Book.fromSupabaseMap(response);
+    } on PostgrestException catch (e) {
+      debugPrint('❌ Supabase PostgrestException while fetching book:');
+      debugPrint('   - Message: ${e.message}');
+      debugPrint('   - Code: ${e.code}');
+
+      if (e.code == '406' || e.message.contains('406')) {
+        debugPrint('⚠️ 406 Error: Check RLS policies for books table.');
+      }
+      return null;
     } catch (e) {
-      debugPrint('Failed to get book from Supabase: $e');
+      debugPrint('❌ Failed to get book from Supabase: $e');
       return null;
     }
   }

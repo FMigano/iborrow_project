@@ -4,7 +4,7 @@ import '../database/database_helper.dart';
 class SyncManager {
   static final SyncManager _instance = SyncManager._internal();
   static const String syncTaskName = 'sync_data';
-  
+
   factory SyncManager() => _instance;
   SyncManager._internal();
 
@@ -24,7 +24,7 @@ class SyncManager {
     try {
       final pendingSyncs = await _databaseHelper.getPendingSyncs();
       debugPrint('Found ${pendingSyncs.length} pending syncs');
-      
+
       for (final sync in pendingSyncs) {
         // Process sync operations
         await _databaseHelper.markSyncComplete(sync.id);
@@ -39,7 +39,7 @@ class SyncManager {
       debugPrint('Background sync not available on web platform');
       return;
     }
-    
+
     debugPrint('Scheduling sync...');
   }
 
@@ -48,7 +48,7 @@ class SyncManager {
       debugPrint('Background sync not available on web platform');
       return;
     }
-    
+
     debugPrint('Cancelling sync...');
   }
 }

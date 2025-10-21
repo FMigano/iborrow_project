@@ -399,7 +399,6 @@ class _DatabaseViewerScreenState extends State<DatabaseViewerScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildDataRow('ID', user.id),
-                      _buildDataRow('Student ID', user.studentId),
                       _buildDataRow('Phone', user.phoneNumber),
                       _buildDataRow('Role',
                           user.isAdmin ? 'Administrator' : 'Regular User'),

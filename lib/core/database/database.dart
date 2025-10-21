@@ -56,14 +56,12 @@ class UsersCompanion {
   final String id;
   final String email;
   final String fullName;
-  final String? studentId;
   final String? phoneNumber;
 
   UsersCompanion.insert({
     required this.id,
     required this.email,
     required this.fullName,
-    this.studentId,
     this.phoneNumber,
   });
 }

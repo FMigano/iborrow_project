@@ -7,11 +7,13 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/home/screens/home_screen.dart';
 import '../../features/books/screens/book_list_screen.dart';
-import '../../features/books/screens/book_detail_screen.dart';
-import '../../features/borrowing/screens/my_borrowings_screen.dart' as borrowing;
+import '../../features/books/screens/enhanced_book_detail_screen.dart';
+import '../../features/borrowing/screens/my_borrowings_screen.dart'
+    as borrowing;
 import '../../features/admin/screens/admin_dashboard_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../debug_viewer.dart'; // Add this
+import '../../features/user/screens/edit_profile_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -22,14 +24,16 @@ class AppRouter {
     redirect: (context, state) {
       final auth = context.read<AuthProvider>();
       final isAuthenticated = auth.isAuthenticated;
-      final isLoginRoute = state.matchedLocation == '/login' || 
-                          state.matchedLocation == '/signup' ||
-                          state.matchedLocation == '/splash';
+      final isLoginRoute = state.matchedLocation == '/login' ||
+          state.matchedLocation == '/signup' ||
+          state.matchedLocation == '/splash';
 
       if (!isAuthenticated && !isLoginRoute) {
         return '/login';
       }
-      if (isAuthenticated && (state.matchedLocation == '/login' || state.matchedLocation == '/signup')) {
+      if (isAuthenticated &&
+          (state.matchedLocation == '/login' ||
+              state.matchedLocation == '/signup')) {
         return '/home';
       }
       return null;
@@ -61,9 +65,9 @@ class AppRouter {
               final bookId = state.pathParameters['id']!;
               final book = state.extra as Book?;
               if (book != null) {
-                return BookDetailScreen(book: book);
+                return EnhancedBookDetailScreen(book: book);
               } else {
-                return BookDetailScreen(bookId: bookId);
+                return EnhancedBookDetailScreen(bookId: bookId);
               }
             },
           ),
@@ -80,6 +84,10 @@ class AppRouter {
       GoRoute(
         path: '/debug',
         builder: (context, state) => const DatabaseViewerScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfileScreen(),
       ),
     ],
   );

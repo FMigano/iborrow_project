@@ -1,6 +1,6 @@
 # iBorrow
 
- iBorrow is a Flutter library-management and book-sharing application. It lets users discover books, request and manage borrowings, organize personal libraries, and participate in a community feed. Administrators can manage catalog and borrowing workflows from the admin dashboard.
+iBorrow is a Flutter library-management and book-sharing application. It lets users discover books, request and manage borrowings, organize personal libraries, and participate in a community feed. Administrators can manage catalog and borrowing workflows from the admin dashboard.
 
 ## Features
 
